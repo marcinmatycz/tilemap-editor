@@ -1,3 +1,4 @@
+#include <array>
 #include <cassert>
 #include <string>
 #include <map>
@@ -44,11 +45,22 @@ struct Tilemap
   std::vector<Rectangle> tiles;
 };
 
+template<typename T>
+std::array<T, 2> get_screen_size(const YAML::Node &config)
+{
+    if(config["screen"]["native"].as<bool>())
+    { 
+      const int monitor = config["screen"]["monitor"].as<int>();
+      return { static_cast<T>(GetMonitorWidth(monitor)), static_cast<T>(GetMonitorHeight(monitor)) };
+    }
+
+    return { config["screen"]["width"].as<T>(), config["screen"]["height"].as<T>()};
+}
+
 std::map<std::string, UI::Item> load_interface(const YAML::Node &config)
 {
-    const float screen_width = config["screen"]["width"].as<float>();
-    const float screen_height = config["screen"]["height"].as<float>();
-
+    const float screen_width = static_cast<float>(GetScreenWidth());
+    const float screen_height = static_cast<float>(GetScreenHeight());
     std::map<std::string, UI::Item> map{};
     for(const auto &item_pair : config["interface"])
     {
@@ -100,8 +112,6 @@ std::map<std::string, UI::Item> load_interface(const YAML::Node &config)
 
 std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
 {
-    const float screen_width = config["screen"]["width"].as<float>();
-    const float screen_height = config["screen"]["height"].as<float>();
     const float tile_size = config["tile_size"].as<float>();
     const float position_x = config["tile_bank"]["position_x"].as<float>();
     const float position_y = config["tile_bank"]["position_y"].as<float>();
@@ -113,8 +123,8 @@ std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
     std::vector<Rectangle> tilebank_array;
     tilebank_array.reserve(tilebank_array_x * tilebank_array_y);
 
-    const float offset_x = position_x * screen_width;
-    const float offset_y = position_y * screen_height;
+    const float offset_x = position_x * static_cast<float>(GetScreenWidth());
+    const float offset_y = position_y * static_cast<float>(GetScreenHeight());
     
     for(unsigned i = 0; i < (tilebank_array_x * tilebank_array_y); i++)
     {
@@ -132,14 +142,17 @@ int main(void)
     const std::string config_path = "../resources/config.yaml";
 
     YAML::Node config = YAML::LoadFile(config_path);
+
+    InitWindow(0, 0, config["window_name"].as<std::string>().c_str());
+    while(not IsWindowReady()) { };
+    ToggleBorderlessWindowed();
+    const auto [screen_width, screen_height] = get_screen_size<int>(config);
+    SetWindowSize(screen_width, screen_height);
+
     std::map<std::string, UI::Item> interface = load_interface(config);
     std::vector<Rectangle> tilebank_array = load_tilebank_array(config);
 
-    const float screen_width = config["screen"]["width"].as<float>();
-    const float screen_height = config["screen"]["height"].as<float>();
 
-    // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
-    InitWindow(static_cast<int>(screen_width), static_cast<int>(screen_height), config["window_name"].as<std::string>().c_str());
 
 
     // Texture load
@@ -170,7 +183,7 @@ int main(void)
 
     Vector2 mousePoint = { 0.0f, 0.0f };
 
-    //SetConfigFlags(FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(60); 
 
     Color original_reload_button_color = std::get<UI::Box>(interface["reload_button"]).color;
