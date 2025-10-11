@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <variant>
+#include <optional>
 #include <iostream>
 #include "raylib.h"
 #include "raymath.h"
@@ -245,14 +246,18 @@ int main(void)
     unsigned long tilemap_index = 0;
 
 
-    Camera2D camera = {};
-    camera.zoom = 1.0f;
+    Camera2D main_camera = {};
+    main_camera.zoom = 1.0f;
+    Camera2D texture_camera = {};
+    texture_camera.zoom = 1.0f;
+
 
     while (!WindowShouldClose())
     {
 	mousePoint = GetMousePosition();
 
 	UI::Box &reload_button = std::get<UI::Textbox>(interface["reload_button"]).box;
+	UI::Box &tile_bank = std::get<UI::Box>(interface["tile_bank"]);
 	UI::Triangle &left_arrow = std::get<UI::Triangle>(interface["tile_bank_arrow_left"]);
 	UI::Triangle &right_arrow = std::get<UI::Triangle>(interface["tile_bank_arrow_right"]);
 	reload_button.color = original_reload_button_color;
@@ -266,23 +271,43 @@ int main(void)
 
 	if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 	{
-	  Vector2 delta = GetMouseDelta();
-	  delta = Vector2Scale(delta, -1.0f/camera.zoom);
-	  camera.target = Vector2Add(camera.target, delta);
-	  camera.target = Vector2Clamp(camera.target, {.x = -50.f, .y = -50.f}, {.x = static_cast<float>(map_grid_x*map_grid_gap)+50.f, .y = static_cast<float>(map_grid_y*map_grid_gap)+50.f});
-	  std::cout << "X: " << camera.target.x << " Y: " << camera.target.y << '\n';
+	  if (CheckCollisionPointRec(mousePoint, tile_bank.rectangle))
+	  {
+	    Vector2 delta = GetMouseDelta();
+	    delta = Vector2Scale(delta, -1.0f/texture_camera.zoom);
+	    texture_camera.target = Vector2Add(texture_camera.target, delta);
+	    texture_camera.target = Vector2Clamp(texture_camera.target, {.x = -50.f, .y = -50.f}, {.x = static_cast<float>(map_grid_x*map_grid_gap)+50.f, .y = static_cast<float>(map_grid_y*map_grid_gap)+50.f});
+	  }
+	  else
+	  {
+	    Vector2 delta = GetMouseDelta();
+	    delta = Vector2Scale(delta, -1.0f/main_camera.zoom);
+	    main_camera.target = Vector2Add(main_camera.target, delta);
+	    main_camera.target = Vector2Clamp(main_camera.target, {.x = -50.f, .y = -50.f}, {.x = static_cast<float>(map_grid_x*map_grid_gap)+50.f, .y = static_cast<float>(map_grid_y*map_grid_gap)+50.f});
+	  }
 	}
 
 	const float wheel = GetMouseWheelMove();
 	if (wheel != 0)
 	{
-	  const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
-	  camera.offset = GetMousePosition();
-	  camera.target = mouseWorldPos;
-	  const float scale = 0.2f*wheel;
-	  camera.zoom = Clamp(expf(logf(camera.zoom)+scale), 0.125f, 64.0f);
-	  std::cout << "X: " << camera.target.x << " Y: " << camera.target.y << '\n';
+	  if (CheckCollisionPointRec(mousePoint, tile_bank.rectangle))
+	  {
+	    const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), texture_camera);
+	    texture_camera.offset = GetMousePosition();
+	    texture_camera.target = mouseWorldPos;
+	    const float scale = 0.2f*wheel;
+	    texture_camera.zoom = Clamp(expf(logf(texture_camera.zoom)+scale), 0.125f, 64.0f);
+	  }
+	  else
+	  {
+	    const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), main_camera);
+	    main_camera.offset = GetMousePosition();
+	    main_camera.target = mouseWorldPos;
+	    const float scale = 0.2f*wheel;
+	    main_camera.zoom = Clamp(expf(logf(main_camera.zoom)+scale), 0.125f, 64.0f);
+	  }
 	}
+
 
 
 
@@ -310,7 +335,7 @@ int main(void)
 		    tilemap_index--;
 		}
 
-		UI::Text &text = std::get<UI::Text>(interface["asset_filename"]);
+		UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
 		text.text = tilemaps[tilemap_index].texture_filename;
 	    }
 	}
@@ -324,7 +349,7 @@ int main(void)
 		{
 		    tilemap_index = 0;
 		}
-		UI::Text &text = std::get<UI::Text>(interface["asset_filename"]);
+		UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
 		text.text = tilemaps[tilemap_index].texture_filename;
 	    }
 	}
@@ -333,7 +358,7 @@ int main(void)
 
 	ClearBackground(RAYWHITE);
 
-	BeginMode2D(camera);
+	BeginMode2D(main_camera);
 
 	for(int i = 0; i < map_grid_x; i++)
 	{
@@ -373,6 +398,8 @@ int main(void)
 		DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
 	    }
 	}
+
+	/*
 	for(unsigned i = 0; i < tilebank_array.size(); i++)
 	{
 	  if(i == tilemaps[tilemap_index].tiles.size())
@@ -381,6 +408,49 @@ int main(void)
 	  }
 	  DrawTexturePro(tilemaps[tilemap_index].texture, tilemaps[tilemap_index].tiles[i], tilebank_array[i], {0.f, 0.f}, 0.f, WHITE);
 	}
+	*/
+
+	Vector2 screen_params = {static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
+	const int sc_x = static_cast<int>(screen_params.x * 0.025f);
+	const int sc_y = static_cast<int>(screen_params.y * 0.125f);
+	const int sc_w = static_cast<int>(screen_params.x * 0.29f);
+	const int sc_h = static_cast<int>(screen_params.y * 0.49f);
+
+
+	BeginScissorMode(sc_x, sc_y, sc_w, sc_h);
+	BeginMode2D(texture_camera);
+
+	std::optional<Rectangle> highlighted{std::nullopt};
+	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), texture_camera);
+
+	int gap = 16*3;
+	for(int i = 0; i < tilemaps[tilemap_index].texture.width/16 + 2; i++)
+	{
+	  for(int j = 0; j < tilemaps[tilemap_index].texture.height/16 + 2; j++)
+	  {
+	    if(CheckCollisionPointRec(mouseWorldPos, Rectangle{.x=static_cast<float>(i*gap), .y=static_cast<float>(j*gap), .width=static_cast<float>(gap), .height=static_cast<float>(gap)}))
+	    {
+	      highlighted = {.x=static_cast<float>(i*gap), .y=static_cast<float>(j*gap), .width=static_cast<float>(gap), .height=static_cast<float>(gap)};
+	    }
+	    else
+	    {
+	      DrawRectangleLines(i*gap, j*gap, gap, gap, BLACK);
+	    }
+	  }
+	}
+
+	DrawTextureEx(tilemaps[tilemap_index].texture, {16.0f*3.f, 16.0f*3.f}, 0, 3, WHITE);
+	if(highlighted)
+	{
+	  Color highlight = BLUE;
+	  highlight.a = 100;
+	  DrawRectangleRec(highlighted.value(), highlight);
+	}
+
+	EndMode2D();
+	EndScissorMode();
+
+
 	EndDrawing();
     }
     for(const auto &tilemap: tilemaps)

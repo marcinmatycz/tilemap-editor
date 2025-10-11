@@ -40,13 +40,13 @@ interface:
     type: box
     position_x: 0.02 
     position_y: 0.05
-    width: 0.2
-    height: 0.90
+    width: 0.3
+    height: 0.60
     color:
-      r: 0
-      g: 0
-      b: 0
-      a: 40
+      r: 200
+      g: 200
+      b: 200
+      a: 255
   tile_bank_arrow_left:
     type: triangle
     p1x: 0.025
@@ -62,18 +62,18 @@ interface:
       a: 150
   tile_bank_arrow_right:
     type: triangle
-    p1x: 0.20
+    p1x: 0.30
     p1y: 0.07
-    p2x: 0.215
+    p2x: 0.315
     p2y: 0.055 
-    p3x: 0.20
+    p3x: 0.30
     p3y: 0.04
     color:
       r: 0
       g: 121
       b: 241
       a: 150
-  asset_filename:
+  tilemap_filename:
     type: text
     position_x: 0.05
     position_y: 0.08
