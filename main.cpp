@@ -34,7 +34,13 @@ struct Text
   Color color;
 };
 
-using Item = std::variant<Box, Triangle, Text>;
+struct Textbox
+{
+  Box box;
+  Text text;
+};
+
+using Item = std::variant<Box, Triangle, Text, Textbox>;
 
 }
 
@@ -48,7 +54,7 @@ struct Tilemap
 template<typename T>
 std::array<T, 2> get_screen_size(const YAML::Node &config)
 {
-    if(config["screen"]["native"].as<bool>())
+    if(config["screen"]["fullscreen"].as<bool>())
     { 
       const int monitor = config["screen"]["monitor"].as<int>();
       return { static_cast<T>(GetMonitorWidth(monitor)), static_cast<T>(GetMonitorHeight(monitor)) };
@@ -99,6 +105,51 @@ std::map<std::string, UI::Item> load_interface(const YAML::Node &config)
 		    .size= item["font_size"].as<int>(),
 		    .text = item["text"].as<std::string>(),
 		    .color = color};
+	}
+	else if(item_type == "textbox")
+	{
+	  const float box_width = screen_width * item["width"].as<float>();
+	  const float box_height = screen_height * item["height"].as<float>();
+	  const std::string text = item["text"].as<std::string>();
+	  const float text_margin = item["text_margin"].as<float>();
+
+	  int font_size = 1;
+	  bool font_size_found = false;
+
+	  while(not font_size_found)
+	  {
+	    const float text_width = static_cast<float>(MeasureText(text.c_str(), font_size));
+	    if(text_width > (box_width - (box_width*text_margin)) )
+	    {
+	      // take previous font size
+	      font_size_found = true;
+	    }
+	    else
+	    {
+	      font_size++;
+	    }
+	  }
+
+	  const float box_x = screen_width * item["position_x"].as<float>();
+	  const float box_y = screen_height * item["position_y"].as<float>();
+
+	  const float text_width = static_cast<float>(MeasureText(text.c_str(), font_size));
+	  const int text_x = static_cast<int>((box_width - text_width)/2.f + box_x);
+	  const int text_y = static_cast<int>((box_height - static_cast<float>(font_size))/2.f + box_y);
+
+	  map[item_key] = UI::Textbox{
+	    UI::Box{
+	      Rectangle{ .x = box_x,
+		.y = box_y,
+		.width = box_width,
+		.height = box_height},
+		color},
+	      UI::Text{
+		  .x = text_x,
+		  .y = text_y,
+		  .size = font_size,
+		  .text = text,
+		  .color = WHITE}};
 	}
 	else
 	{
@@ -183,10 +234,9 @@ int main(void)
 
     Vector2 mousePoint = { 0.0f, 0.0f };
 
-    SetConfigFlags(FLAG_VSYNC_HINT);
     SetTargetFPS(60); 
 
-    Color original_reload_button_color = std::get<UI::Box>(interface["reload_button"]).color;
+    Color original_reload_button_color = std::get<UI::Textbox>(interface["reload_button"]).box.color;
     Color original_left_arrow_color = std::get<UI::Triangle>(interface["tile_bank_arrow_left"]).color;
     Color original_right_arrow_color = std::get<UI::Triangle>(interface["tile_bank_arrow_right"]).color;
 
@@ -196,7 +246,7 @@ int main(void)
     {
 	mousePoint = GetMousePosition();
 
-	UI::Box &reload_button = std::get<UI::Box>(interface["reload_button"]);
+	UI::Box &reload_button = std::get<UI::Textbox>(interface["reload_button"]).box;
 	UI::Triangle &left_arrow = std::get<UI::Triangle>(interface["tile_bank_arrow_left"]);
 	UI::Triangle &right_arrow = std::get<UI::Triangle>(interface["tile_bank_arrow_right"]);
 	reload_button.color = original_reload_button_color;
@@ -211,7 +261,6 @@ int main(void)
 		config = YAML::LoadFile(config_path);
 		interface = load_interface(config);
 		tilebank_array = load_tilebank_array(config);
-		original_reload_button_color = std::get<UI::Box>(interface["reload_button"]).color;
 	    }
 	}
 	else if (CheckCollisionPointTriangle(mousePoint, left_arrow.p1, left_arrow.p2, left_arrow.p3))
@@ -230,7 +279,6 @@ int main(void)
 
 		UI::Text &text = std::get<UI::Text>(interface["asset_filename"]);
 		text.text = tilemaps[tilemap_index].texture_filename;
-		original_reload_button_color = std::get<UI::Box>(interface["reload_button"]).color;
 	    }
 	}
 	else if (CheckCollisionPointTriangle(mousePoint, right_arrow.p1, right_arrow.p2, right_arrow.p3))
@@ -245,7 +293,6 @@ int main(void)
 		}
 		UI::Text &text = std::get<UI::Text>(interface["asset_filename"]);
 		text.text = tilemaps[tilemap_index].texture_filename;
-		original_reload_button_color = std::get<UI::Box>(interface["reload_button"]).color;
 	    }
 	}
 
@@ -268,6 +315,14 @@ int main(void)
 	    else if(std::holds_alternative<UI::Text>(item.second))
 	    {
 		const auto &text = std::get<UI::Text>(item.second);
+		DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
+	    }
+	    else if(std::holds_alternative<UI::Textbox>(item.second))
+	    {
+		const auto &box = std::get<UI::Textbox>(item.second).box;
+		DrawRectangleRec(box.rectangle, box.color);
+
+		const auto &text = std::get<UI::Textbox>(item.second).text;
 		DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
 	    }
 	}

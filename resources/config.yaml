@@ -1,7 +1,7 @@
 window_name: tilemap-editor
 screen:
     monitor: 0
-    native: ON
+    fullscreen: ON
     width: 1600
     height: 900
 asset_path: resources/assets
@@ -21,27 +21,18 @@ tile_bank:
 
 interface:
   reload_button:
-    type: box
+    type: textbox
     position_x: 0.45 
     position_y: 0.05
     width: 0.1
     height: 0.05
+    text: "RELOAD_UI"
+    text_margin: 0.2
     color:
       r: 0
       g: 121
       b: 241
       a: 150
-  reload_button_text:
-    type: text
-    position_x: 0.46
-    position_y: 0.07
-    font_size: 20
-    text: "RELOAD UI"
-    color:
-      r: 255
-      g: 255
-      b: 255
-      a: 255
   tile_bank:
     type: box
     position_x: 0.02 
