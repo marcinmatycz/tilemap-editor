@@ -9,6 +9,10 @@ tile_filenames:
   - buildings.png
   - props-01.png
 tile_size: 16
+map:
+  grid_x: 100
+  grid_y: 100
+  grid_gap_px: 50
 
 tile_bank:
   position_x: 0.03

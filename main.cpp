@@ -5,6 +5,8 @@
 #include <variant>
 #include <iostream>
 #include "raylib.h"
+#include "raymath.h"
+#include "rlgl.h"
 #include "yaml-cpp/node/node.h"
 #include "yaml-cpp/yaml.h"
 
@@ -242,6 +244,10 @@ int main(void)
 
     unsigned long tilemap_index = 0;
 
+
+    Camera2D camera = {};
+    camera.zoom = 1.0f;
+
     while (!WindowShouldClose())
     {
 	mousePoint = GetMousePosition();
@@ -252,6 +258,33 @@ int main(void)
 	reload_button.color = original_reload_button_color;
 	left_arrow.color = original_left_arrow_color;
 	right_arrow.color = original_right_arrow_color;
+
+	const int map_grid_gap = config["map"]["grid_gap_px"].as<int>();
+	const int map_grid_x= config["map"]["grid_x"].as<int>();
+	const int map_grid_y= config["map"]["grid_y"].as<int>();
+
+
+	if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+	{
+	  Vector2 delta = GetMouseDelta();
+	  delta = Vector2Scale(delta, -1.0f/camera.zoom);
+	  camera.target = Vector2Add(camera.target, delta);
+	  camera.target = Vector2Clamp(camera.target, {.x = -50.f, .y = -50.f}, {.x = static_cast<float>(map_grid_x*map_grid_gap)+50.f, .y = static_cast<float>(map_grid_y*map_grid_gap)+50.f});
+	  std::cout << "X: " << camera.target.x << " Y: " << camera.target.y << '\n';
+	}
+
+	const float wheel = GetMouseWheelMove();
+	if (wheel != 0)
+	{
+	  const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
+	  camera.offset = GetMousePosition();
+	  camera.target = mouseWorldPos;
+	  const float scale = 0.2f*wheel;
+	  camera.zoom = Clamp(expf(logf(camera.zoom)+scale), 0.125f, 64.0f);
+	  std::cout << "X: " << camera.target.x << " Y: " << camera.target.y << '\n';
+	}
+
+
 
 	if (CheckCollisionPointRec(mousePoint, reload_button.rectangle))
 	{
@@ -299,6 +332,20 @@ int main(void)
 	BeginDrawing();
 
 	ClearBackground(RAYWHITE);
+
+	BeginMode2D(camera);
+
+	for(int i = 0; i < map_grid_x; i++)
+	{
+	  for(int j = 0; j < map_grid_y; j++)
+	  {
+	    DrawRectangleLines(i*map_grid_gap, j*map_grid_gap, map_grid_gap, map_grid_gap, BLACK);
+	  }
+	}
+	DrawCircle(GetScreenWidth()/2, GetScreenHeight()/2, 50, MAROON);
+
+	EndMode2D();
+
 
 	for(const auto &item: interface)
 	{
