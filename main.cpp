@@ -56,7 +56,7 @@ std::array<T, 2> get_screen_size(const YAML::Node &config)
 {
     if(config["screen"]["fullscreen"].as<bool>())
     { 
-      const int monitor = config["screen"]["monitor"].as<int>();
+      const int monitor = GetCurrentMonitor();
       return { static_cast<T>(GetMonitorWidth(monitor)), static_cast<T>(GetMonitorHeight(monitor)) };
     }
 

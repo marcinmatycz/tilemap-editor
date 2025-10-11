@@ -1,6 +1,5 @@
 window_name: tilemap-editor
 screen:
-    monitor: 0
     fullscreen: ON
     width: 1600
     height: 900
