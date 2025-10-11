@@ -1,0 +1,92 @@
+window_name: tilemap-editor
+screen:
+    width: 1600
+    height: 900
+asset_path: resources/assets
+tile_filenames:
+  - tiles.png
+  - buildings.png
+  - props-01.png
+tile_size: 16
+
+tile_bank:
+  position_x: 0.03
+  position_y: 0.13
+  count_x: 5
+  count_y: 13
+  gap: 10
+  scale: 3
+
+interface:
+  reload_button:
+    type: box
+    position_x: 0.45 
+    position_y: 0.05
+    width: 0.1
+    height: 0.05
+    color:
+      r: 0
+      g: 121
+      b: 241
+      a: 150
+  reload_button_text:
+    type: text
+    position_x: 0.46
+    position_y: 0.07
+    font_size: 20
+    text: "RELOAD UI"
+    color:
+      r: 255
+      g: 255
+      b: 255
+      a: 255
+  tile_bank:
+    type: box
+    position_x: 0.02 
+    position_y: 0.05
+    width: 0.2
+    height: 0.95
+    color:
+      r: 0
+      g: 0
+      b: 0
+      a: 40
+  tile_bank_arrow_left:
+    type: triangle
+    p1x: 0.025
+    p1y: 0.055
+    p2x: 0.04
+    p2y: 0.07
+    p3x: 0.04
+    p3y: 0.04
+    color:
+      r: 0
+      g: 121
+      b: 241
+      a: 150
+  tile_bank_arrow_right:
+    type: triangle
+    p1x: 0.20
+    p1y: 0.07
+    p2x: 0.215
+    p2y: 0.055 
+    p3x: 0.20
+    p3y: 0.04
+    color:
+      r: 0
+      g: 121
+      b: 241
+      a: 150
+  asset_filename:
+    type: text
+    position_x: 0.05
+    position_y: 0.08
+    font_size: 20
+    text: "No texture files found"
+    color:
+      r: 0
+      g: 0
+      b: 0
+      a: 255
+
+
