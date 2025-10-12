@@ -47,6 +47,12 @@ struct Tilemap {
     std::vector<Rectangle> tiles;
 };
 
+struct Inputs {
+    Vector2 mouse_point{};
+};
+
+Inputs get_inputs() { return {GetMousePosition()}; }
+
 template <typename T> std::array<T, 2> get_screen_size(const YAML::Node &config) {
     if (config["screen"]["fullscreen"].as<bool>()) {
         const int monitor = GetCurrentMonitor();
@@ -187,8 +193,6 @@ int main(void) {
         tilemaps.push_back(Tilemap{std::move(texture_filename), texture, std::move(tiles)});
     }
 
-    Vector2 mousePoint = {0.0f, 0.0f};
-
     SetTargetFPS(60);
 
     Color original_reload_button_color = std::get<UI::Textbox>(interface["reload_button"]).box.color;
@@ -203,7 +207,7 @@ int main(void) {
     texture_camera.zoom = 1.0f;
 
     while (!WindowShouldClose()) {
-        mousePoint = GetMousePosition();
+        Inputs inputs = get_inputs();
 
         UI::Box &reload_button = std::get<UI::Textbox>(interface["reload_button"]).box;
         UI::Box &tile_bank = std::get<UI::Box>(interface["tile_bank"]);
@@ -218,7 +222,7 @@ int main(void) {
         const int map_grid_y = config["map"]["grid_y"].as<int>();
 
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-            if (CheckCollisionPointRec(mousePoint, tile_bank.rectangle)) {
+            if (CheckCollisionPointRec(inputs.mouse_point, tile_bank.rectangle)) {
                 Vector2 delta = GetMouseDelta();
                 delta = Vector2Scale(delta, -1.0f / texture_camera.zoom);
                 texture_camera.target = Vector2Add(texture_camera.target, delta);
@@ -237,7 +241,7 @@ int main(void) {
 
         const float wheel = GetMouseWheelMove();
         if (wheel != 0) {
-            if (CheckCollisionPointRec(mousePoint, tile_bank.rectangle)) {
+            if (CheckCollisionPointRec(inputs.mouse_point, tile_bank.rectangle)) {
                 const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), texture_camera);
                 texture_camera.offset = GetMousePosition();
                 texture_camera.target = mouseWorldPos;
@@ -252,14 +256,14 @@ int main(void) {
             }
         }
 
-        if (CheckCollisionPointRec(mousePoint, reload_button.rectangle)) {
+        if (CheckCollisionPointRec(inputs.mouse_point, reload_button.rectangle)) {
             reload_button.color.a += 40;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 config = YAML::LoadFile(config_path);
                 interface = load_interface(config);
                 tilebank_array = load_tilebank_array(config);
             }
-        } else if (CheckCollisionPointTriangle(mousePoint, left_arrow.p1, left_arrow.p2, left_arrow.p3)) {
+        } else if (CheckCollisionPointTriangle(inputs.mouse_point, left_arrow.p1, left_arrow.p2, left_arrow.p3)) {
             left_arrow.color.a += 40;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 if (tilemap_index == 0) {
@@ -271,7 +275,7 @@ int main(void) {
                 UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
                 text.text = tilemaps[tilemap_index].texture_filename;
             }
-        } else if (CheckCollisionPointTriangle(mousePoint, right_arrow.p1, right_arrow.p2, right_arrow.p3)) {
+        } else if (CheckCollisionPointTriangle(inputs.mouse_point, right_arrow.p1, right_arrow.p2, right_arrow.p3)) {
             right_arrow.color.a += 40;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 tilemap_index++;
