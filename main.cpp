@@ -47,11 +47,101 @@ struct Tilemap {
     std::vector<Rectangle> tiles;
 };
 
-struct Inputs {
-    Vector2 mouse_point{};
+enum class MouseButtonState {
+    UP,
+    DOWN,
+    PRESSED,
+    RELEASED,
 };
 
-Inputs get_inputs() { return {GetMousePosition()}; }
+struct Inputs {
+    Vector2 mouse_point{};
+    MouseButtonState left_mouse_button{};
+    MouseButtonState right_mouse_button{};
+    float wheel{};
+};
+
+MouseButtonState get_mouse_button_state(const MouseButton button) {
+    if (IsMouseButtonReleased(button)) {
+        return MouseButtonState::RELEASED;
+    } else if (IsMouseButtonUp(button)) {
+        return MouseButtonState::UP;
+    } else if (IsMouseButtonPressed(button)) {
+        return MouseButtonState::PRESSED;
+    } else if (IsMouseButtonDown(button)) {
+        return MouseButtonState::DOWN;
+    }
+    assert(false);
+    return MouseButtonState::UP;
+}
+
+Inputs get_inputs() {
+    return {GetMousePosition(), get_mouse_button_state(MOUSE_BUTTON_LEFT), get_mouse_button_state(MOUSE_BUTTON_RIGHT),
+            GetMouseWheelMove()};
+}
+
+struct Grid {
+    unsigned x_square_count{};
+    unsigned y_square_count{};
+    unsigned square_size{};
+};
+
+struct GameState {
+    Grid main_grid{};
+    Grid texture_grid{};
+    Camera2D main_camera{};
+    Camera2D texture_camera{};
+
+    UI::Box tile_bank{};
+};
+
+Vector2 pan_camera(const Camera2D &camera, const Vector2 &clamp_min, const Vector2 &clamp_max) {
+    Vector2 delta = Vector2Scale(GetMouseDelta(), -1.0f / camera.zoom);
+    return Vector2Clamp(Vector2Add(camera.target, delta), clamp_min, clamp_max);
+}
+
+constexpr Vector2 Vector2_from_int(const int x, const int y) { return {static_cast<float>(x), static_cast<float>(y)}; }
+
+constexpr Vector2 Vector2_from_uint(const unsigned x, const unsigned y) {
+    return {static_cast<float>(x), static_cast<float>(y)};
+}
+
+void update_game_state(const Inputs &inputs, GameState &game_state) {
+    if ((inputs.right_mouse_button == MouseButtonState::DOWN) or
+        (inputs.right_mouse_button == MouseButtonState::PRESSED)) {
+        if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle)) {
+            const Grid &grid = game_state.texture_grid;
+            const Vector2 clamp_min =
+                Vector2_from_int(-1 * static_cast<int>(grid.square_size), -1 * static_cast<int>(grid.square_size));
+            const Vector2 clamp_max = Vector2_from_uint((grid.x_square_count + 1) * grid.square_size,
+                                                        (grid.y_square_count + 1) * grid.square_size);
+            game_state.texture_camera.target = pan_camera(game_state.texture_camera, clamp_min, clamp_max);
+        } else {
+            const Grid &grid = game_state.main_grid;
+            const Vector2 clamp_min =
+                Vector2_from_int(-1 * static_cast<int>(grid.square_size), -1 * static_cast<int>(grid.square_size));
+            const Vector2 clamp_max = Vector2_from_uint((grid.x_square_count + 1) * grid.square_size,
+                                                        (grid.y_square_count + 1) * grid.square_size);
+            game_state.main_camera.target = pan_camera(game_state.main_camera, clamp_min, clamp_max);
+        }
+    }
+
+    if (inputs.wheel != 0) {
+        if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle)) {
+            const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), game_state.texture_camera);
+            game_state.texture_camera.offset = GetMousePosition();
+            game_state.texture_camera.target = mouseWorldPos;
+            const float scale = 0.2f * inputs.wheel;
+            game_state.texture_camera.zoom = Clamp(expf(logf(game_state.texture_camera.zoom) + scale), 0.125f, 64.0f);
+        } else {
+            const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), game_state.main_camera);
+            game_state.main_camera.offset = GetMousePosition();
+            game_state.main_camera.target = mouseWorldPos;
+            const float scale = 0.2f * inputs.wheel;
+            game_state.main_camera.zoom = Clamp(expf(logf(game_state.main_camera.zoom) + scale), 0.125f, 64.0f);
+        }
+    }
+};
 
 template <typename T> std::array<T, 2> get_screen_size(const YAML::Node &config) {
     if (config["screen"]["fullscreen"].as<bool>()) {
@@ -206,55 +296,32 @@ int main(void) {
     Camera2D texture_camera = {};
     texture_camera.zoom = 1.0f;
 
+    const Grid main_grid{.x_square_count = config["map"]["grid_x"].as<unsigned>(),
+                         .y_square_count = config["map"]["grid_y"].as<unsigned>(),
+                         .square_size = config["map"]["grid_gap_px"].as<unsigned>()};
+
+    // TODO: FIX THIS add to config or something
+    const Grid texture_grid{.x_square_count = static_cast<unsigned>(tilemaps[tilemap_index].texture.width / 16 + 2),
+                            .y_square_count = static_cast<unsigned>(tilemaps[tilemap_index].texture.height / 16 + 2),
+                            .square_size = 16 * 3};
+
+    GameState state{.main_grid = main_grid,
+                    .texture_grid = texture_grid,
+                    .main_camera = main_camera,
+                    .texture_camera = texture_camera,
+                    .tile_bank = std::get<UI::Box>(interface["tile_bank"])};
+
     while (!WindowShouldClose()) {
-        Inputs inputs = get_inputs();
+
+        const Inputs inputs = get_inputs();
+        update_game_state(inputs, state);
 
         UI::Box &reload_button = std::get<UI::Textbox>(interface["reload_button"]).box;
-        UI::Box &tile_bank = std::get<UI::Box>(interface["tile_bank"]);
         UI::Triangle &left_arrow = std::get<UI::Triangle>(interface["tile_bank_arrow_left"]);
         UI::Triangle &right_arrow = std::get<UI::Triangle>(interface["tile_bank_arrow_right"]);
         reload_button.color = original_reload_button_color;
         left_arrow.color = original_left_arrow_color;
         right_arrow.color = original_right_arrow_color;
-
-        const int map_grid_gap = config["map"]["grid_gap_px"].as<int>();
-        const int map_grid_x = config["map"]["grid_x"].as<int>();
-        const int map_grid_y = config["map"]["grid_y"].as<int>();
-
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-            if (CheckCollisionPointRec(inputs.mouse_point, tile_bank.rectangle)) {
-                Vector2 delta = GetMouseDelta();
-                delta = Vector2Scale(delta, -1.0f / texture_camera.zoom);
-                texture_camera.target = Vector2Add(texture_camera.target, delta);
-                texture_camera.target = Vector2Clamp(texture_camera.target, {.x = -50.f, .y = -50.f},
-                                                     {.x = static_cast<float>(map_grid_x * map_grid_gap) + 50.f,
-                                                      .y = static_cast<float>(map_grid_y * map_grid_gap) + 50.f});
-            } else {
-                Vector2 delta = GetMouseDelta();
-                delta = Vector2Scale(delta, -1.0f / main_camera.zoom);
-                main_camera.target = Vector2Add(main_camera.target, delta);
-                main_camera.target = Vector2Clamp(main_camera.target, {.x = -50.f, .y = -50.f},
-                                                  {.x = static_cast<float>(map_grid_x * map_grid_gap) + 50.f,
-                                                   .y = static_cast<float>(map_grid_y * map_grid_gap) + 50.f});
-            }
-        }
-
-        const float wheel = GetMouseWheelMove();
-        if (wheel != 0) {
-            if (CheckCollisionPointRec(inputs.mouse_point, tile_bank.rectangle)) {
-                const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), texture_camera);
-                texture_camera.offset = GetMousePosition();
-                texture_camera.target = mouseWorldPos;
-                const float scale = 0.2f * wheel;
-                texture_camera.zoom = Clamp(expf(logf(texture_camera.zoom) + scale), 0.125f, 64.0f);
-            } else {
-                const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), main_camera);
-                main_camera.offset = GetMousePosition();
-                main_camera.target = mouseWorldPos;
-                const float scale = 0.2f * wheel;
-                main_camera.zoom = Clamp(expf(logf(main_camera.zoom) + scale), 0.125f, 64.0f);
-            }
-        }
 
         if (CheckCollisionPointRec(inputs.mouse_point, reload_button.rectangle)) {
             reload_button.color.a += 40;
@@ -291,11 +358,13 @@ int main(void) {
 
         ClearBackground(RAYWHITE);
 
-        BeginMode2D(main_camera);
+        BeginMode2D(state.main_camera);
 
-        for (int i = 0; i < map_grid_x; i++) {
-            for (int j = 0; j < map_grid_y; j++) {
-                DrawRectangleLines(i * map_grid_gap, j * map_grid_gap, map_grid_gap, map_grid_gap, BLACK);
+        for (unsigned i = 0; i < state.main_grid.x_square_count; i++) {
+            for (unsigned j = 0; j < state.main_grid.y_square_count; j++) {
+                const unsigned square_size = state.main_grid.square_size;
+                DrawRectangleLines(static_cast<int>(i * square_size), static_cast<int>(j * square_size),
+                                   static_cast<int>(square_size), static_cast<int>(square_size), BLACK);
             }
         }
         DrawCircle(GetScreenWidth() / 2, GetScreenHeight() / 2, 50, MAROON);
@@ -321,18 +390,6 @@ int main(void) {
             }
         }
 
-        /*
-        for(unsigned i = 0; i < tilebank_array.size(); i++)
-        {
-          if(i == tilemaps[tilemap_index].tiles.size())
-          {
-            break;
-          }
-          DrawTexturePro(tilemaps[tilemap_index].texture, tilemaps[tilemap_index].tiles[i], tilebank_array[i], {0.f,
-        0.f}, 0.f, WHITE);
-        }
-        */
-
         Vector2 screen_params = {static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
         const int sc_x = static_cast<int>(screen_params.x * 0.025f);
         const int sc_y = static_cast<int>(screen_params.y * 0.125f);
@@ -340,24 +397,25 @@ int main(void) {
         const int sc_h = static_cast<int>(screen_params.y * 0.49f);
 
         BeginScissorMode(sc_x, sc_y, sc_w, sc_h);
-        BeginMode2D(texture_camera);
+        BeginMode2D(state.texture_camera);
 
         std::optional<Rectangle> highlighted{std::nullopt};
-        Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), texture_camera);
+        Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), state.texture_camera);
 
-        int gap = 16 * 3;
-        for (int i = 0; i < tilemaps[tilemap_index].texture.width / 16 + 2; i++) {
-            for (int j = 0; j < tilemaps[tilemap_index].texture.height / 16 + 2; j++) {
-                if (CheckCollisionPointRec(mouseWorldPos, Rectangle{.x = static_cast<float>(i * gap),
-                                                                    .y = static_cast<float>(j * gap),
-                                                                    .width = static_cast<float>(gap),
-                                                                    .height = static_cast<float>(gap)})) {
-                    highlighted = {.x = static_cast<float>(i * gap),
-                                   .y = static_cast<float>(j * gap),
-                                   .width = static_cast<float>(gap),
-                                   .height = static_cast<float>(gap)};
+        for (unsigned i = 0; i < state.texture_grid.x_square_count; i++) {
+            for (unsigned j = 0; j < state.texture_grid.y_square_count; j++) {
+                const unsigned square_size = state.texture_grid.square_size;
+                if (CheckCollisionPointRec(mouseWorldPos, Rectangle{.x = static_cast<float>(i * square_size),
+                                                                    .y = static_cast<float>(j * square_size),
+                                                                    .width = static_cast<float>(square_size),
+                                                                    .height = static_cast<float>(square_size)})) {
+                    highlighted = {.x = static_cast<float>(i * square_size),
+                                   .y = static_cast<float>(j * square_size),
+                                   .width = static_cast<float>(square_size),
+                                   .height = static_cast<float>(square_size)};
                 } else {
-                    DrawRectangleLines(i * gap, j * gap, gap, gap, BLACK);
+                    DrawRectangleLines(static_cast<int>(i * square_size), static_cast<int>(j * square_size),
+                                       static_cast<int>(square_size), static_cast<int>(square_size), BLACK);
                 }
             }
         }
