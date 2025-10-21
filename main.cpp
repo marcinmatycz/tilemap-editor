@@ -10,21 +10,25 @@
 #include "yaml-cpp/node/node.h"
 #include "yaml-cpp/yaml.h"
 
-namespace UI {
+namespace UI
+{
 
-struct Box {
+struct Box
+{
     Rectangle rectangle;
     Color color;
 };
 
-struct Triangle {
+struct Triangle
+{
     Vector2 p1;
     Vector2 p2;
     Vector2 p3;
     Color color;
 };
 
-struct Text {
+struct Text
+{
     int x;
     int y;
     int size;
@@ -32,7 +36,8 @@ struct Text {
     Color color;
 };
 
-struct Textbox {
+struct Textbox
+{
     Box box;
     Text text;
 };
@@ -41,52 +46,66 @@ using Item = std::variant<Box, Triangle, Text, Textbox>;
 
 } // namespace UI
 
-struct Tilemap {
+struct Tilemap
+{
     std::string texture_filename;
     Texture2D texture;
     std::vector<Rectangle> tiles;
 };
 
-enum class MouseButtonState {
+enum class MouseButtonState
+{
     UP,
     DOWN,
     PRESSED,
     RELEASED,
 };
 
-struct Inputs {
+struct Inputs
+{
     Vector2 mouse_point{};
     MouseButtonState left_mouse_button{};
     MouseButtonState right_mouse_button{};
     float wheel{};
 };
 
-MouseButtonState get_mouse_button_state(const MouseButton button) {
-    if (IsMouseButtonReleased(button)) {
+MouseButtonState get_mouse_button_state(const MouseButton button)
+{
+    if (IsMouseButtonReleased(button))
+    {
         return MouseButtonState::RELEASED;
-    } else if (IsMouseButtonUp(button)) {
+    }
+    else if (IsMouseButtonUp(button))
+    {
         return MouseButtonState::UP;
-    } else if (IsMouseButtonPressed(button)) {
+    }
+    else if (IsMouseButtonPressed(button))
+    {
         return MouseButtonState::PRESSED;
-    } else if (IsMouseButtonDown(button)) {
+    }
+    else if (IsMouseButtonDown(button))
+    {
         return MouseButtonState::DOWN;
     }
     assert(false);
     return MouseButtonState::UP;
 }
 
-Inputs get_inputs() {
+Inputs get_inputs()
+{
     return {GetMousePosition(), get_mouse_button_state(MOUSE_BUTTON_LEFT), get_mouse_button_state(MOUSE_BUTTON_RIGHT),
             GetMouseWheelMove()};
 }
 
-struct Grid {
+struct Grid
+{
     unsigned x_square_count{};
     unsigned y_square_count{};
     unsigned square_size{};
 };
 
-struct GameState {
+struct GameState
+{
     Grid main_grid{};
     Grid texture_grid{};
     Camera2D main_camera{};
@@ -95,56 +114,64 @@ struct GameState {
     UI::Box tile_bank{};
 };
 
-Vector2 pan_camera(const Camera2D &camera, const Vector2 &clamp_min, const Vector2 &clamp_max) {
-    Vector2 delta = Vector2Scale(GetMouseDelta(), -1.0f / camera.zoom);
-    return Vector2Clamp(Vector2Add(camera.target, delta), clamp_min, clamp_max);
+std::array<Vector2, 2> get_camera_boundaries(const Grid &grid)
+{
+  const Vector2 min{-static_cast<float>(grid.square_size), -static_cast<float>(grid.square_size)};
+  const Vector2 max{(grid.x_square_count + 1) * grid.square_size,
+    (grid.y_square_count + 1) * grid.square_size};
+  return {min, max};
 }
 
-constexpr Vector2 Vector2_from_int(const int x, const int y) { return {static_cast<float>(x), static_cast<float>(y)}; }
-
-constexpr Vector2 Vector2_from_uint(const unsigned x, const unsigned y) {
-    return {static_cast<float>(x), static_cast<float>(y)};
+void pan_camera(Camera2D &camera, const Vector2 &clamp_min, const Vector2 &clamp_max)
+{
+    const Vector2 delta = Vector2Scale(GetMouseDelta(), -1.0f / camera.zoom);
+    camera.target = Vector2Clamp(Vector2Add(camera.target, delta), clamp_min, clamp_max);
 }
 
-void update_game_state(const Inputs &inputs, GameState &game_state) {
+void zoom_camera(Camera2D &camera, const Inputs &inputs)
+{
+  const float scale = 0.2f * inputs.wheel;
+  const Vector2 mouseWorldPos = GetScreenToWorld2D(inputs.mouse_point, camera);
+  camera.offset = inputs.mouse_point;
+  camera.target = mouseWorldPos;
+  camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.125f, 64.0f);
+}
+
+
+void update_game_state(const Inputs &inputs, GameState &game_state)
+{
     if ((inputs.right_mouse_button == MouseButtonState::DOWN) or
-        (inputs.right_mouse_button == MouseButtonState::PRESSED)) {
-        if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle)) {
-            const Grid &grid = game_state.texture_grid;
-            const Vector2 clamp_min =
-                Vector2_from_int(-1 * static_cast<int>(grid.square_size), -1 * static_cast<int>(grid.square_size));
-            const Vector2 clamp_max = Vector2_from_uint((grid.x_square_count + 1) * grid.square_size,
-                                                        (grid.y_square_count + 1) * grid.square_size);
-            game_state.texture_camera.target = pan_camera(game_state.texture_camera, clamp_min, clamp_max);
-        } else {
-            const Grid &grid = game_state.main_grid;
-            const Vector2 clamp_min =
-                Vector2_from_int(-1 * static_cast<int>(grid.square_size), -1 * static_cast<int>(grid.square_size));
-            const Vector2 clamp_max = Vector2_from_uint((grid.x_square_count + 1) * grid.square_size,
-                                                        (grid.y_square_count + 1) * grid.square_size);
-            game_state.main_camera.target = pan_camera(game_state.main_camera, clamp_min, clamp_max);
+        (inputs.right_mouse_button == MouseButtonState::PRESSED))
+    {
+        if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle))
+        {
+	    const auto [min, max] = get_camera_boundaries(game_state.texture_grid);
+            pan_camera(game_state.texture_camera, min, max);
+        }
+        else
+        {
+	    const auto [min, max] = get_camera_boundaries(game_state.main_grid);
+            pan_camera(game_state.main_camera, min, max);
         }
     }
 
-    if (inputs.wheel != 0) {
-        if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle)) {
-            const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), game_state.texture_camera);
-            game_state.texture_camera.offset = GetMousePosition();
-            game_state.texture_camera.target = mouseWorldPos;
-            const float scale = 0.2f * inputs.wheel;
-            game_state.texture_camera.zoom = Clamp(expf(logf(game_state.texture_camera.zoom) + scale), 0.125f, 64.0f);
-        } else {
-            const Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), game_state.main_camera);
-            game_state.main_camera.offset = GetMousePosition();
-            game_state.main_camera.target = mouseWorldPos;
-            const float scale = 0.2f * inputs.wheel;
-            game_state.main_camera.zoom = Clamp(expf(logf(game_state.main_camera.zoom) + scale), 0.125f, 64.0f);
-        }
+    if (inputs.wheel != 0)
+    {
+	if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle))
+	{
+	    zoom_camera(game_state.texture_camera, inputs);
+	}
+	else
+	{
+	    zoom_camera(game_state.main_camera, inputs);
+	}
     }
 };
 
-template <typename T> std::array<T, 2> get_screen_size(const YAML::Node &config) {
-    if (config["screen"]["fullscreen"].as<bool>()) {
+template <typename T> std::array<T, 2> get_screen_size(const YAML::Node &config)
+{
+    if (config["screen"]["fullscreen"].as<bool>())
+    {
         const int monitor = GetCurrentMonitor();
         return {static_cast<T>(GetMonitorWidth(monitor)), static_cast<T>(GetMonitorHeight(monitor))};
     }
@@ -152,37 +179,45 @@ template <typename T> std::array<T, 2> get_screen_size(const YAML::Node &config)
     return {config["screen"]["width"].as<T>(), config["screen"]["height"].as<T>()};
 }
 
-std::map<std::string, UI::Item> load_interface(const YAML::Node &config) {
-    const float screen_width = static_cast<float>(GetScreenWidth());
-    const float screen_height = static_cast<float>(GetScreenHeight());
+std::map<std::string, UI::Item> load_interface(const YAML::Node &config)
+{
+    const float screen_width = GetScreenWidth();
+    const float screen_height = GetScreenHeight();
     std::map<std::string, UI::Item> map{};
-    for (const auto &item_pair : config["interface"]) {
+    for (const auto &item_pair : config["interface"])
+    {
         const std::string item_key = item_pair.first.as<std::string>();
         const auto &item = item_pair.second;
         const std::string item_type = item["type"].as<std::string>();
         const Color color = {item["color"]["r"].as<unsigned char>(), item["color"]["g"].as<unsigned char>(),
                              item["color"]["b"].as<unsigned char>(), item["color"]["a"].as<unsigned char>()};
 
-        if (item_type == "box") {
+        if (item_type == "box")
+        {
             map[item_key] = UI::Box{Rectangle{.x = screen_width * item["position_x"].as<float>(),
                                               .y = screen_height * item["position_y"].as<float>(),
                                               .width = screen_width * item["width"].as<float>(),
                                               .height = screen_height * item["height"].as<float>()},
                                     color};
-        } else if (item_type == "triangle") {
+        }
+        else if (item_type == "triangle")
+        {
             map[item_key] =
                 UI::Triangle{.p1 = {screen_width * item["p1x"].as<float>(), screen_width * item["p1y"].as<float>()},
                              .p2 = {screen_width * item["p2x"].as<float>(), screen_width * item["p2y"].as<float>()},
                              .p3 = {screen_width * item["p3x"].as<float>(), screen_width * item["p3y"].as<float>()},
                              .color = color};
-
-        } else if (item_type == "text") {
-            map[item_key] = UI::Text{.x = static_cast<int>(screen_width * item["position_x"].as<float>()),
-                                     .y = static_cast<int>(screen_height * item["position_y"].as<float>()),
+        }
+        else if (item_type == "text")
+        {
+            map[item_key] = UI::Text{.x = screen_width * item["position_x"].as<float>(),
+                                     .y = screen_height * item["position_y"].as<float>(),
                                      .size = item["font_size"].as<int>(),
                                      .text = item["text"].as<std::string>(),
                                      .color = color};
-        } else if (item_type == "textbox") {
+        }
+        else if (item_type == "textbox")
+        {
             const float box_width = screen_width * item["width"].as<float>();
             const float box_height = screen_height * item["height"].as<float>();
             const std::string text = item["text"].as<std::string>();
@@ -191,12 +226,16 @@ std::map<std::string, UI::Item> load_interface(const YAML::Node &config) {
             int font_size = 1;
             bool font_size_found = false;
 
-            while (not font_size_found) {
-                const float text_width = static_cast<float>(MeasureText(text.c_str(), font_size));
-                if (text_width > (box_width - (box_width * text_margin))) {
+            while (not font_size_found)
+            {
+                const float text_width = MeasureText(text.c_str(), font_size);
+                if (text_width > (box_width - (box_width * text_margin)))
+                {
                     // take previous font size
                     font_size_found = true;
-                } else {
+                }
+                else
+                {
                     font_size++;
                 }
             }
@@ -204,14 +243,16 @@ std::map<std::string, UI::Item> load_interface(const YAML::Node &config) {
             const float box_x = screen_width * item["position_x"].as<float>();
             const float box_y = screen_height * item["position_y"].as<float>();
 
-            const float text_width = static_cast<float>(MeasureText(text.c_str(), font_size));
-            const int text_x = static_cast<int>((box_width - text_width) / 2.f + box_x);
-            const int text_y = static_cast<int>((box_height - static_cast<float>(font_size)) / 2.f + box_y);
+            const float text_width = MeasureText(text.c_str(), font_size);
+            const int text_x = (box_width - text_width) / 2.f + box_x;
+            const int text_y = (box_height - font_size) / 2.f + box_y;
 
             map[item_key] =
                 UI::Textbox{UI::Box{Rectangle{.x = box_x, .y = box_y, .width = box_width, .height = box_height}, color},
                             UI::Text{.x = text_x, .y = text_y, .size = font_size, .text = text, .color = WHITE}};
-        } else {
+        }
+        else
+        {
             assert(false);
         }
     }
@@ -219,7 +260,8 @@ std::map<std::string, UI::Item> load_interface(const YAML::Node &config) {
     return map;
 }
 
-std::vector<Rectangle> load_tilebank_array(const YAML::Node &config) {
+std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
+{
     const float tile_size = config["tile_size"].as<float>();
     const float position_x = config["tile_bank"]["position_x"].as<float>();
     const float position_y = config["tile_bank"]["position_y"].as<float>();
@@ -231,27 +273,29 @@ std::vector<Rectangle> load_tilebank_array(const YAML::Node &config) {
     std::vector<Rectangle> tilebank_array;
     tilebank_array.reserve(tilebank_array_x * tilebank_array_y);
 
-    const float offset_x = position_x * static_cast<float>(GetScreenWidth());
-    const float offset_y = position_y * static_cast<float>(GetScreenHeight());
+    const float offset_x = position_x * GetScreenWidth();
+    const float offset_y = position_y * GetScreenHeight();
 
-    for (unsigned i = 0; i < (tilebank_array_x * tilebank_array_y); i++) {
+    for (unsigned i = 0; i < (tilebank_array_x * tilebank_array_y); i++)
+    {
 
-        tilebank_array.push_back(
-            {.x = offset_x + static_cast<float>(i % tilebank_array_x) * ((scale * tile_size) + gap),
-             .y = offset_y + static_cast<float>(i / tilebank_array_x) * ((scale * tile_size) + gap),
-             .width = scale * static_cast<float>(tile_size),
-             .height = scale * static_cast<float>(tile_size)});
+        tilebank_array.push_back({.x = offset_x + i % tilebank_array_x * ((scale * tile_size) + gap),
+                                  .y = offset_y + i / tilebank_array_x * ((scale * tile_size) + gap),
+                                  .width = scale * tile_size,
+                                  .height = scale * tile_size});
     }
     return tilebank_array;
 }
 
-int main(void) {
+int main(void)
+{
     const std::string config_path = "../resources/config.yaml";
 
     YAML::Node config = YAML::LoadFile(config_path);
 
     InitWindow(0, 0, config["window_name"].as<std::string>().c_str());
-    while (not IsWindowReady()) {
+    while (not IsWindowReady())
+    {
     };
     ToggleBorderlessWindowed();
     const auto [screen_width, screen_height] = get_screen_size<int>(config);
@@ -264,21 +308,23 @@ int main(void) {
     const unsigned tile_size = config["tile_size"].as<unsigned>();
     std::vector<Tilemap> tilemaps{};
     tilemaps.reserve(config["tile_filenames"].size());
-    for (const auto &filename : config["tile_filenames"]) {
+    for (const auto &filename : config["tile_filenames"])
+    {
         const std::string texture_filename =
             "../" + config["asset_path"].as<std::string>() + "/" + filename.as<std::string>();
         const Texture2D texture = LoadTexture(texture_filename.c_str());
-        assert((static_cast<unsigned>(texture.width) % tile_size) == 0);
-        assert((static_cast<unsigned>(texture.height) % tile_size) == 0);
-        const unsigned tiles_count_x = static_cast<unsigned>(texture.width) / tile_size;
-        const unsigned tiles_count_y = static_cast<unsigned>(texture.height) / tile_size;
+        assert((texture.width % tile_size) == 0);
+        assert((texture.height % tile_size) == 0);
+        const unsigned tiles_count_x = texture.width / tile_size;
+        const unsigned tiles_count_y = texture.height / tile_size;
         std::vector<Rectangle> tiles;
         tiles.reserve(tiles_count_x * tiles_count_y);
-        for (unsigned i = 0; i < (tiles_count_x * tiles_count_y); i++) {
-            tiles.push_back({.x = static_cast<float>(tile_size * (i % tiles_count_x)),
-                             .y = static_cast<float>(tile_size * (i / tiles_count_x)),
-                             .width = static_cast<float>(tile_size),
-                             .height = static_cast<float>(tile_size)});
+        for (unsigned i = 0; i < (tiles_count_x * tiles_count_y); i++)
+        {
+            tiles.push_back({.x = tile_size * (i % tiles_count_x),
+                             .y = tile_size * (i / tiles_count_x),
+                             .width = tile_size,
+                             .height = tile_size});
         }
         tilemaps.push_back(Tilemap{std::move(texture_filename), texture, std::move(tiles)});
     }
@@ -301,8 +347,8 @@ int main(void) {
                          .square_size = config["map"]["grid_gap_px"].as<unsigned>()};
 
     // TODO: FIX THIS add to config or something
-    const Grid texture_grid{.x_square_count = static_cast<unsigned>(tilemaps[tilemap_index].texture.width / 16 + 2),
-                            .y_square_count = static_cast<unsigned>(tilemaps[tilemap_index].texture.height / 16 + 2),
+    const Grid texture_grid{.x_square_count = tilemaps[tilemap_index].texture.width / 16 + 2,
+                            .y_square_count = tilemaps[tilemap_index].texture.height / 16 + 2,
                             .square_size = 16 * 3};
 
     GameState state{.main_grid = main_grid,
@@ -311,7 +357,8 @@ int main(void) {
                     .texture_camera = texture_camera,
                     .tile_bank = std::get<UI::Box>(interface["tile_bank"])};
 
-    while (!WindowShouldClose()) {
+    while (!WindowShouldClose())
+    {
 
         const Inputs inputs = get_inputs();
         update_game_state(inputs, state);
@@ -323,30 +370,42 @@ int main(void) {
         left_arrow.color = original_left_arrow_color;
         right_arrow.color = original_right_arrow_color;
 
-        if (CheckCollisionPointRec(inputs.mouse_point, reload_button.rectangle)) {
+        if (CheckCollisionPointRec(inputs.mouse_point, reload_button.rectangle))
+        {
             reload_button.color.a += 40;
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
                 config = YAML::LoadFile(config_path);
                 interface = load_interface(config);
                 tilebank_array = load_tilebank_array(config);
             }
-        } else if (CheckCollisionPointTriangle(inputs.mouse_point, left_arrow.p1, left_arrow.p2, left_arrow.p3)) {
+        }
+        else if (CheckCollisionPointTriangle(inputs.mouse_point, left_arrow.p1, left_arrow.p2, left_arrow.p3))
+        {
             left_arrow.color.a += 40;
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                if (tilemap_index == 0) {
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                if (tilemap_index == 0)
+                {
                     tilemap_index = tilemaps.size() - 1;
-                } else {
+                }
+                else
+                {
                     tilemap_index--;
                 }
 
                 UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
                 text.text = tilemaps[tilemap_index].texture_filename;
             }
-        } else if (CheckCollisionPointTriangle(inputs.mouse_point, right_arrow.p1, right_arrow.p2, right_arrow.p3)) {
+        }
+        else if (CheckCollisionPointTriangle(inputs.mouse_point, right_arrow.p1, right_arrow.p2, right_arrow.p3))
+        {
             right_arrow.color.a += 40;
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
                 tilemap_index++;
-                if (tilemap_index == tilemaps.size()) {
+                if (tilemap_index == tilemaps.size())
+                {
                     tilemap_index = 0;
                 }
                 UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
@@ -360,28 +419,37 @@ int main(void) {
 
         BeginMode2D(state.main_camera);
 
-        for (unsigned i = 0; i < state.main_grid.x_square_count; i++) {
-            for (unsigned j = 0; j < state.main_grid.y_square_count; j++) {
+        for (unsigned i = 0; i < state.main_grid.x_square_count; i++)
+        {
+            for (unsigned j = 0; j < state.main_grid.y_square_count; j++)
+            {
                 const unsigned square_size = state.main_grid.square_size;
-                DrawRectangleLines(static_cast<int>(i * square_size), static_cast<int>(j * square_size),
-                                   static_cast<int>(square_size), static_cast<int>(square_size), BLACK);
+                DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
             }
         }
         DrawCircle(GetScreenWidth() / 2, GetScreenHeight() / 2, 50, MAROON);
 
         EndMode2D();
 
-        for (const auto &item : interface) {
-            if (std::holds_alternative<UI::Box>(item.second)) {
+        for (const auto &item : interface)
+        {
+            if (std::holds_alternative<UI::Box>(item.second))
+            {
                 const auto &box = std::get<UI::Box>(item.second);
                 DrawRectangleRec(box.rectangle, box.color);
-            } else if (std::holds_alternative<UI::Triangle>(item.second)) {
+            }
+            else if (std::holds_alternative<UI::Triangle>(item.second))
+            {
                 const auto &triangle = std::get<UI::Triangle>(item.second);
                 DrawTriangle(triangle.p1, triangle.p2, triangle.p3, triangle.color);
-            } else if (std::holds_alternative<UI::Text>(item.second)) {
+            }
+            else if (std::holds_alternative<UI::Text>(item.second))
+            {
                 const auto &text = std::get<UI::Text>(item.second);
                 DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
-            } else if (std::holds_alternative<UI::Textbox>(item.second)) {
+            }
+            else if (std::holds_alternative<UI::Textbox>(item.second))
+            {
                 const auto &box = std::get<UI::Textbox>(item.second).box;
                 DrawRectangleRec(box.rectangle, box.color);
 
@@ -390,11 +458,11 @@ int main(void) {
             }
         }
 
-        Vector2 screen_params = {static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
-        const int sc_x = static_cast<int>(screen_params.x * 0.025f);
-        const int sc_y = static_cast<int>(screen_params.y * 0.125f);
-        const int sc_w = static_cast<int>(screen_params.x * 0.29f);
-        const int sc_h = static_cast<int>(screen_params.y * 0.49f);
+        Vector2 screen_params = {GetScreenWidth(), GetScreenHeight()};
+        const int sc_x = screen_params.x * 0.025f;
+        const int sc_y = screen_params.y * 0.125f;
+        const int sc_w = screen_params.x * 0.29f;
+        const int sc_h = screen_params.y * 0.49f;
 
         BeginScissorMode(sc_x, sc_y, sc_w, sc_h);
         BeginMode2D(state.texture_camera);
@@ -402,26 +470,29 @@ int main(void) {
         std::optional<Rectangle> highlighted{std::nullopt};
         Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), state.texture_camera);
 
-        for (unsigned i = 0; i < state.texture_grid.x_square_count; i++) {
-            for (unsigned j = 0; j < state.texture_grid.y_square_count; j++) {
+        for (unsigned i = 0; i < state.texture_grid.x_square_count; i++)
+        {
+            for (unsigned j = 0; j < state.texture_grid.y_square_count; j++)
+            {
                 const unsigned square_size = state.texture_grid.square_size;
-                if (CheckCollisionPointRec(mouseWorldPos, Rectangle{.x = static_cast<float>(i * square_size),
-                                                                    .y = static_cast<float>(j * square_size),
-                                                                    .width = static_cast<float>(square_size),
-                                                                    .height = static_cast<float>(square_size)})) {
-                    highlighted = {.x = static_cast<float>(i * square_size),
-                                   .y = static_cast<float>(j * square_size),
-                                   .width = static_cast<float>(square_size),
-                                   .height = static_cast<float>(square_size)};
-                } else {
-                    DrawRectangleLines(static_cast<int>(i * square_size), static_cast<int>(j * square_size),
-                                       static_cast<int>(square_size), static_cast<int>(square_size), BLACK);
+                if (CheckCollisionPointRec(mouseWorldPos, Rectangle{.x = i * square_size,
+                                                                    .y = j * square_size,
+                                                                    .width = square_size,
+                                                                    .height = square_size}))
+                {
+                    highlighted = {
+                        .x = i * square_size, .y = j * square_size, .width = square_size, .height = square_size};
+                }
+                else
+                {
+                    DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
                 }
             }
         }
 
         DrawTextureEx(tilemaps[tilemap_index].texture, {16.0f * 3.f, 16.0f * 3.f}, 0, 3, WHITE);
-        if (highlighted) {
+        if (highlighted)
+        {
             Color highlight = BLUE;
             highlight.a = 100;
             DrawRectangleRec(highlighted.value(), highlight);
@@ -433,7 +504,8 @@ int main(void) {
         EndDrawing();
     }
 
-    for (const auto &tilemap : tilemaps) {
+    for (const auto &tilemap : tilemaps)
+    {
         UnloadTexture(tilemap.texture);
     }
     CloseWindow();

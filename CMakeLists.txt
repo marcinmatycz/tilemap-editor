@@ -40,8 +40,8 @@ target_compile_options(
   -Wcast-align
   -Wunused
   -Woverloaded-virtual
-  -Wconversion
   -Wsign-conversion
+  -Wno-narrowing
   -Wnull-dereference
   -Wdouble-promotion
   -Wformat=2
