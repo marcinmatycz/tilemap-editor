@@ -99,9 +99,9 @@ Inputs get_inputs()
 
 struct Grid
 {
-    unsigned x_square_count{};
-    unsigned y_square_count{};
-    unsigned square_size{};
+    int x_square_count{};
+    int y_square_count{};
+    int square_size{};
 };
 
 struct GameState
@@ -116,10 +116,9 @@ struct GameState
 
 std::array<Vector2, 2> get_camera_boundaries(const Grid &grid)
 {
-  const Vector2 min{-static_cast<float>(grid.square_size), -static_cast<float>(grid.square_size)};
-  const Vector2 max{(grid.x_square_count + 1) * grid.square_size,
-    (grid.y_square_count + 1) * grid.square_size};
-  return {min, max};
+    const Vector2 min{-grid.square_size, -grid.square_size};
+    const Vector2 max{(grid.x_square_count + 1) * grid.square_size, (grid.y_square_count + 1) * grid.square_size};
+    return {min, max};
 }
 
 void pan_camera(Camera2D &camera, const Vector2 &clamp_min, const Vector2 &clamp_max)
@@ -130,13 +129,12 @@ void pan_camera(Camera2D &camera, const Vector2 &clamp_min, const Vector2 &clamp
 
 void zoom_camera(Camera2D &camera, const Inputs &inputs)
 {
-  const float scale = 0.2f * inputs.wheel;
-  const Vector2 mouseWorldPos = GetScreenToWorld2D(inputs.mouse_point, camera);
-  camera.offset = inputs.mouse_point;
-  camera.target = mouseWorldPos;
-  camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.125f, 64.0f);
+    const float scale = 0.2f * inputs.wheel;
+    const Vector2 mouseWorldPos = GetScreenToWorld2D(inputs.mouse_point, camera);
+    camera.offset = inputs.mouse_point;
+    camera.target = mouseWorldPos;
+    camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.125f, 64.0f);
 }
-
 
 void update_game_state(const Inputs &inputs, GameState &game_state)
 {
@@ -145,26 +143,26 @@ void update_game_state(const Inputs &inputs, GameState &game_state)
     {
         if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle))
         {
-	    const auto [min, max] = get_camera_boundaries(game_state.texture_grid);
+            const auto [min, max] = get_camera_boundaries(game_state.texture_grid);
             pan_camera(game_state.texture_camera, min, max);
         }
         else
         {
-	    const auto [min, max] = get_camera_boundaries(game_state.main_grid);
+            const auto [min, max] = get_camera_boundaries(game_state.main_grid);
             pan_camera(game_state.main_camera, min, max);
         }
     }
 
     if (inputs.wheel != 0)
     {
-	if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle))
-	{
-	    zoom_camera(game_state.texture_camera, inputs);
-	}
-	else
-	{
-	    zoom_camera(game_state.main_camera, inputs);
-	}
+        if (CheckCollisionPointRec(inputs.mouse_point, game_state.tile_bank.rectangle))
+        {
+            zoom_camera(game_state.texture_camera, inputs);
+        }
+        else
+        {
+            zoom_camera(game_state.main_camera, inputs);
+        }
     }
 };
 
@@ -265,18 +263,18 @@ std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
     const float tile_size = config["tile_size"].as<float>();
     const float position_x = config["tile_bank"]["position_x"].as<float>();
     const float position_y = config["tile_bank"]["position_y"].as<float>();
-    const unsigned tilebank_array_x = config["tile_bank"]["count_x"].as<unsigned>();
-    const unsigned tilebank_array_y = config["tile_bank"]["count_y"].as<unsigned>();
+    const int tilebank_array_x = config["tile_bank"]["count_x"].as<int>();
+    const int tilebank_array_y = config["tile_bank"]["count_y"].as<int>();
     const float gap = config["tile_bank"]["gap"].as<float>();
     const float scale = config["tile_bank"]["scale"].as<float>();
 
     std::vector<Rectangle> tilebank_array;
-    tilebank_array.reserve(tilebank_array_x * tilebank_array_y);
+    tilebank_array.reserve(static_cast<unsigned>(tilebank_array_x * tilebank_array_y));
 
     const float offset_x = position_x * GetScreenWidth();
     const float offset_y = position_y * GetScreenHeight();
 
-    for (unsigned i = 0; i < (tilebank_array_x * tilebank_array_y); i++)
+    for (int i = 0; i < (tilebank_array_x * tilebank_array_y); i++)
     {
 
         tilebank_array.push_back({.x = offset_x + i % tilebank_array_x * ((scale * tile_size) + gap),
@@ -305,7 +303,7 @@ int main(void)
     std::vector<Rectangle> tilebank_array = load_tilebank_array(config);
 
     // Texture load
-    const unsigned tile_size = config["tile_size"].as<unsigned>();
+    const int tile_size = config["tile_size"].as<int>();
     std::vector<Tilemap> tilemaps{};
     tilemaps.reserve(config["tile_filenames"].size());
     for (const auto &filename : config["tile_filenames"])
@@ -315,11 +313,11 @@ int main(void)
         const Texture2D texture = LoadTexture(texture_filename.c_str());
         assert((texture.width % tile_size) == 0);
         assert((texture.height % tile_size) == 0);
-        const unsigned tiles_count_x = texture.width / tile_size;
-        const unsigned tiles_count_y = texture.height / tile_size;
+        const int tiles_count_x = texture.width / tile_size;
+        const int tiles_count_y = texture.height / tile_size;
         std::vector<Rectangle> tiles;
-        tiles.reserve(tiles_count_x * tiles_count_y);
-        for (unsigned i = 0; i < (tiles_count_x * tiles_count_y); i++)
+        tiles.reserve(static_cast<unsigned>(tiles_count_x * tiles_count_y));
+        for (int i = 0; i < (tiles_count_x * tiles_count_y); i++)
         {
             tiles.push_back({.x = tile_size * (i % tiles_count_x),
                              .y = tile_size * (i / tiles_count_x),
@@ -342,9 +340,9 @@ int main(void)
     Camera2D texture_camera = {};
     texture_camera.zoom = 1.0f;
 
-    const Grid main_grid{.x_square_count = config["map"]["grid_x"].as<unsigned>(),
-                         .y_square_count = config["map"]["grid_y"].as<unsigned>(),
-                         .square_size = config["map"]["grid_gap_px"].as<unsigned>()};
+    const Grid main_grid{.x_square_count = config["map"]["grid_x"].as<int>(),
+                         .y_square_count = config["map"]["grid_y"].as<int>(),
+                         .square_size = config["map"]["grid_gap_px"].as<int>()};
 
     // TODO: FIX THIS add to config or something
     const Grid texture_grid{.x_square_count = tilemaps[tilemap_index].texture.width / 16 + 2,
@@ -419,11 +417,11 @@ int main(void)
 
         BeginMode2D(state.main_camera);
 
-        for (unsigned i = 0; i < state.main_grid.x_square_count; i++)
+        for (int i = 0; i < state.main_grid.x_square_count; i++)
         {
-            for (unsigned j = 0; j < state.main_grid.y_square_count; j++)
+            for (int j = 0; j < state.main_grid.y_square_count; j++)
             {
-                const unsigned square_size = state.main_grid.square_size;
+                const int square_size = state.main_grid.square_size;
                 DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
             }
         }
@@ -470,11 +468,11 @@ int main(void)
         std::optional<Rectangle> highlighted{std::nullopt};
         Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), state.texture_camera);
 
-        for (unsigned i = 0; i < state.texture_grid.x_square_count; i++)
+        for (int i = 0; i < state.texture_grid.x_square_count; i++)
         {
-            for (unsigned j = 0; j < state.texture_grid.y_square_count; j++)
+            for (int j = 0; j < state.texture_grid.y_square_count; j++)
             {
-                const unsigned square_size = state.texture_grid.square_size;
+                const int square_size = state.texture_grid.square_size;
                 if (CheckCollisionPointRec(mouseWorldPos, Rectangle{.x = i * square_size,
                                                                     .y = j * square_size,
                                                                     .width = square_size,
