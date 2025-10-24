@@ -8,11 +8,15 @@ tile_filenames:
   - tiles.png
   - buildings.png
   - props-01.png
-tile_size: 16
-map:
-  grid_x: 100
-  grid_y: 100
-  grid_gap_px: 50
+tile_size_px: 16
+main_grid:
+  count_x: 100
+  count_y: 100
+  initial_scale: 3
+
+texture_grid:
+  initial_scale: 3
+  margin: 1
 
 tile_bank:
   position_x: 0.03
@@ -23,7 +27,32 @@ tile_bank:
   scale: 3
 
 interface:
+  main_area:
+    layer: 4
+    type: box
+    position_x: 0
+    position_y: 0
+    width: 1
+    height: 1
+    color:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
+  texture_area:
+    layer: 2
+    type: box
+    position_x: 0.025
+    position_y: 0.125
+    width: 0.29
+    height: 0.49
+    color:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
   reload_button:
+    layer: 1
     type: textbox
     position_x: 0.45 
     position_y: 0.05
@@ -37,6 +66,7 @@ interface:
       b: 241
       a: 150
   tile_bank:
+    layer: 3
     type: box
     position_x: 0.02 
     position_y: 0.05
@@ -48,6 +78,7 @@ interface:
       b: 200
       a: 255
   tile_bank_arrow_left:
+    layer: 1
     type: triangle
     p1x: 0.025
     p1y: 0.055
@@ -59,8 +90,9 @@ interface:
       r: 0
       g: 121
       b: 241
-      a: 150
+      a: 255
   tile_bank_arrow_right:
+    layer: 1
     type: triangle
     p1x: 0.30
     p1y: 0.07
@@ -72,8 +104,9 @@ interface:
       r: 0
       g: 121
       b: 241
-      a: 150
+      a: 255
   tilemap_filename:
+    layer: 1
     type: text
     position_x: 0.05
     position_y: 0.08
