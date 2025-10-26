@@ -41,6 +41,8 @@ struct AppState
     Camera2D texture_camera{};
     std::vector<Tilemap> tilemaps{};
     unsigned tilemap_index{0};
+    int tile_size{};
+    int texture_grid_margin{};
 };
 
 inline MouseButtonState get_mouse_button_state(const MouseButton button)

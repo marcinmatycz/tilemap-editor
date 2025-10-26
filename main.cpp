@@ -1,4 +1,3 @@
-#include <array>
 #include <cassert>
 #include <map>
 #include <optional>
@@ -102,7 +101,10 @@ int main(void)
                        .main_camera = main_camera,
                        .texture_camera = texture_camera,
                        .tilemaps = config::load_textures(config),
-                       .tilemap_index = {}};
+                       .tilemap_index = {},
+                       .tile_size = tile_size,
+                       .texture_grid_margin = margin};
+
     if (app_state.tilemaps.size() > 0)
     {
         app_state.texture_grid = {.x_square_count = app_state.tilemaps[0].texture.width / tile_size + 2 * margin,

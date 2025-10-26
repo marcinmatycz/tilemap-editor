@@ -32,13 +32,25 @@ inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &u
     {
         // TODO: better colors in yaml, add predefined which map to raylib or something
         std::get<UI::Triangle>(arrow).color.a += 40;
+
+        unsigned &index = app_state.tilemap_index;
         if (inputs.left_mouse_button == MouseButtonState::PRESSED)
         {
-            app_state.tilemap_index++;
-            if (app_state.tilemap_index == app_state.tilemaps.size())
+            index++;
+            if (index == app_state.tilemaps.size())
             {
-                app_state.tilemap_index = 0;
+                index = 0;
             }
+
+            const int initial_scale = app_state.texture_grid.square_size_px / app_state.tile_size;
+            const int tile_size = app_state.tile_size;
+            const int margin = app_state.texture_grid_margin;
+
+            app_state.texture_grid = {
+                .x_square_count = app_state.tilemaps[index].texture.width / tile_size + 2 * margin,
+                .y_square_count = app_state.tilemaps[index].texture.height / tile_size + 2 * margin,
+                .square_size_px = tile_size * initial_scale};
+
             UI::Text &text = std::get<UI::Text>(ui["tilemap_filename"]);
             text.text = app_state.tilemaps[app_state.tilemap_index].texture_filename;
         }
@@ -60,14 +72,24 @@ inline void arrow_left(const Inputs &inputs, std::map<std::string, UI::Item> &ui
         std::get<UI::Triangle>(arrow).color.a += 40;
         if (inputs.left_mouse_button == MouseButtonState::PRESSED)
         {
-            if (app_state.tilemap_index == 0)
+            unsigned &index = app_state.tilemap_index;
+            if (index == 0)
             {
-                app_state.tilemap_index = app_state.tilemaps.size() - 1;
+                index = app_state.tilemaps.size() - 1;
             }
             else
             {
-                app_state.tilemap_index--;
+                index--;
             }
+
+            const int initial_scale = app_state.texture_grid.square_size_px / app_state.tile_size;
+            const int tile_size = app_state.tile_size;
+            const int margin = app_state.texture_grid_margin;
+
+            app_state.texture_grid = {
+                .x_square_count = app_state.tilemaps[index].texture.width / tile_size + 2 * margin,
+                .y_square_count = app_state.tilemaps[index].texture.height / tile_size + 2 * margin,
+                .square_size_px = tile_size * initial_scale};
             UI::Text &text = std::get<UI::Text>(ui["tilemap_filename"]);
             text.text = app_state.tilemaps[app_state.tilemap_index].texture_filename;
         }
