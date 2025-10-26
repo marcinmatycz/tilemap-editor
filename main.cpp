@@ -71,6 +71,20 @@ std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
 }
 */
 
+std::optional<Rectangle> get_highlighted_tile(const Vector2 &mouse_point, const Grid &grid)
+{
+    //TODO: add grids starting drawing (left top) point maybe?
+    const Rectangle grid_boundaries{.x = 0.f, .y = 0.f, .width = grid.square_size_px * grid.x_square_count, .height = grid.square_size_px * grid.y_square_count};
+    if(not CheckCollisionPointRec(mouse_point, grid_boundaries))
+    {
+	return std::nullopt;
+    }
+    const auto &size = grid.square_size_px;
+    const int x = mouse_point.x / size;
+    const int y = mouse_point.y / size;
+    return Rectangle{.x = x * size, .y = y * size, .width = size, .height = size};
+}
+
 int main(void)
 {
     const std::string config_path = "../resources/config.yaml";
@@ -146,7 +160,10 @@ int main(void)
 	previously_hovered_item = hovered_item;
 
 
-
+	const Vector2 mouse_point_texture = GetScreenToWorld2D(inputs.mouse_point, app_state.texture_camera);
+	const Vector2 mouse_point_map = GetScreenToWorld2D(inputs.mouse_point, app_state.main_camera);
+	const std::optional<Rectangle> highlighted_texture_tile = get_highlighted_tile(mouse_point_texture, app_state.texture_grid);
+	const std::optional<Rectangle> highlighted_map_tile = get_highlighted_tile(mouse_point_map, app_state.main_grid);
 
         BeginDrawing();
 
@@ -154,6 +171,10 @@ int main(void)
 
         BeginMode2D(app_state.main_camera);
 	drawing::draw_main_area(app_state);
+	if(highlighted_map_tile)
+	{
+	    drawing::draw_highlighted_tile(highlighted_map_tile.value());
+	}
         EndMode2D();
 
 	drawing::draw_ui(layers, ui);
@@ -165,10 +186,12 @@ int main(void)
 
         BeginScissorMode(sc_x, sc_y, sc_w, sc_h);
         BeginMode2D(app_state.texture_camera);
-
 	drawing::draw_texture_area(app_state, tilemaps[app_state.tilemap_index].texture, config);
-	
-        EndMode2D();
+	if(highlighted_texture_tile)
+	{
+	    drawing::draw_highlighted_tile(highlighted_texture_tile.value());
+	}
+	EndMode2D();
         EndScissorMode();
 
         EndDrawing();

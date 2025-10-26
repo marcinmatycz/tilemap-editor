@@ -44,7 +44,6 @@ target_compile_options(
   -Wsign-conversion
   -Wno-narrowing
   -Wnull-dereference
-  -Wdouble-promotion
   -Wformat=2
   -Wmisleading-indentation
   -Wduplicated-cond
