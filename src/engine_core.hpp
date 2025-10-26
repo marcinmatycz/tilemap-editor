@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <string>
+#include <vector>
 #include "raylib.h"
 
 struct Tilemap
@@ -38,6 +39,7 @@ struct AppState
     Grid texture_grid{};
     Camera2D main_camera{};
     Camera2D texture_camera{};
+    std::vector<Tilemap> tilemaps{};
     unsigned tilemap_index{0};
 };
 

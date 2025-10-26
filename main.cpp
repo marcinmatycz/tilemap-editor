@@ -24,6 +24,7 @@ struct Tilemap
 using Callback = void (*)(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &app_state,
                           bool is_hovered);
 
+// TODO: layers has ugly type, fix this
 std::optional<std::string> get_ui_interaction(const Inputs &inputs, const std::vector<std::vector<std::string>> &layers,
                                               std::map<std::string, UI::Item> &ui)
 {
@@ -79,12 +80,9 @@ int main(void)
     std::map<std::string, Callback> ui_callbacks;
     ui_callbacks["reload_button"] = callbacks::reload_button;
     ui_callbacks["tile_bank_arrow_right"] = callbacks::arrow_right;
+    ui_callbacks["tile_bank_arrow_left"] = callbacks::arrow_left;
     ui_callbacks["main_area"] = callbacks::main_area;
     ui_callbacks["texture_area"] = callbacks::texture_area;
-
-    std::vector<Tilemap> tilemaps = config::load_textures(config);
-
-    SetTargetFPS(60);
 
     Camera2D main_camera = {};
     main_camera.zoom = 1.0f;
@@ -99,21 +97,21 @@ int main(void)
     const int initial_scale = config["texture_grid"]["initial_scale"].as<int>();
     const int margin = config["texture_grid"]["margin"].as<int>();
 
-    Grid texture_grid{};
-    if (tilemaps.size() > 0)
-    {
-        texture_grid = {.x_square_count = tilemaps[0].texture.width / tile_size + 2 * margin,
-                        .y_square_count = tilemaps[0].texture.height / tile_size + 2 * margin,
-                        .square_size_px = tile_size * initial_scale};
-    }
-
     AppState app_state{.main_grid = main_grid,
-                       .texture_grid = texture_grid,
+                       .texture_grid = {},
                        .main_camera = main_camera,
                        .texture_camera = texture_camera,
+                       .tilemaps = config::load_textures(config),
                        .tilemap_index = {}};
+    if (app_state.tilemaps.size() > 0)
+    {
+        app_state.texture_grid = {.x_square_count = app_state.tilemaps[0].texture.width / tile_size + 2 * margin,
+                                  .y_square_count = app_state.tilemaps[0].texture.height / tile_size + 2 * margin,
+                                  .square_size_px = tile_size * initial_scale};
+    }
     std::optional<std::string> previously_hovered_item{std::nullopt};
 
+    SetTargetFPS(60);
     while (!WindowShouldClose())
     {
         const Inputs inputs = get_inputs();
@@ -162,7 +160,7 @@ int main(void)
 
         BeginScissorMode(sc_x, sc_y, sc_w, sc_h);
         BeginMode2D(app_state.texture_camera);
-        drawing::draw_texture_area(app_state, tilemaps[app_state.tilemap_index].texture, config);
+        drawing::draw_texture_area(app_state, app_state.tilemaps[app_state.tilemap_index].texture, config);
         if (highlighted_texture_tile)
         {
             drawing::draw_highlighted_tile(highlighted_texture_tile.value());
@@ -173,7 +171,7 @@ int main(void)
         EndDrawing();
     }
 
-    for (const auto &tilemap : tilemaps)
+    for (const auto &tilemap : app_state.tilemaps)
     {
         UnloadTexture(tilemap.texture);
     }

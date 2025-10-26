@@ -2,7 +2,6 @@
 #include <vector>
 #include <variant>
 #include <map>
-#include <optional>
 #include "raylib.h"
 #include "engine_core.hpp"
 #include "ui.hpp"
@@ -21,8 +20,6 @@ inline void draw_main_area(const AppState &app_state)
             DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
         }
     }
-    // TODO: remove
-    DrawCircle(GetScreenWidth() / 2, GetScreenHeight() / 2, 50, MAROON);
 }
 
 inline void draw_texture_area(const AppState &app_state, const Texture2D &texture, const YAML::Node &config)

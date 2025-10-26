@@ -24,7 +24,8 @@ inline void reload_button(const Inputs &, std::map<std::string, UI::Item> &ui, A
     }
 }
 
-inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &, const bool is_hovered)
+inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &app_state,
+                        const bool is_hovered)
 {
     UI::Item &arrow = ui["tile_bank_arrow_right"];
     if (is_hovered)
@@ -33,15 +34,42 @@ inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &u
         std::get<UI::Triangle>(arrow).color.a += 40;
         if (inputs.left_mouse_button == MouseButtonState::PRESSED)
         {
-            /*
-            tilemap_index++;
-            if (tilemap_index == tilemaps.size())
+            app_state.tilemap_index++;
+            if (app_state.tilemap_index == app_state.tilemaps.size())
             {
-                tilemap_index = 0;
+                app_state.tilemap_index = 0;
             }
-            UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
-            text.text = tilemaps[tilemap_index].texture_filename;
-            */
+            UI::Text &text = std::get<UI::Text>(ui["tilemap_filename"]);
+            text.text = app_state.tilemaps[app_state.tilemap_index].texture_filename;
+        }
+    }
+    else
+    {
+        // TODO: add hovered color and not hovered color
+        std::get<UI::Triangle>(arrow).color.a -= 40;
+    }
+}
+
+inline void arrow_left(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &app_state,
+                       const bool is_hovered)
+{
+    UI::Item &arrow = ui["tile_bank_arrow_left"];
+    if (is_hovered)
+    {
+        // TODO: better colors in yaml, add predefined which map to raylib or something
+        std::get<UI::Triangle>(arrow).color.a += 40;
+        if (inputs.left_mouse_button == MouseButtonState::PRESSED)
+        {
+            if (app_state.tilemap_index == 0)
+            {
+                app_state.tilemap_index = app_state.tilemaps.size() - 1;
+            }
+            else
+            {
+                app_state.tilemap_index--;
+            }
+            UI::Text &text = std::get<UI::Text>(ui["tilemap_filename"]);
+            text.text = app_state.tilemaps[app_state.tilemap_index].texture_filename;
         }
     }
     else
