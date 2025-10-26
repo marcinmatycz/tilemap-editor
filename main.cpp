@@ -41,35 +41,6 @@ std::optional<std::string> get_ui_interaction(const Inputs &inputs, const std::v
     return std::nullopt;
 };
 
-/*
-std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
-{
-    const float tile_size = config["tile_size"].as<float>();
-    const float position_x = config["tile_bank"]["position_x"].as<float>();
-    const float position_y = config["tile_bank"]["position_y"].as<float>();
-    const int tilebank_array_x = config["tile_bank"]["count_x"].as<int>();
-    const int tilebank_array_y = config["tile_bank"]["count_y"].as<int>();
-    const float gap = config["tile_bank"]["gap"].as<float>();
-    const float scale = config["tile_bank"]["scale"].as<float>();
-
-    std::vector<Rectangle> tilebank_array;
-    tilebank_array.reserve(static_cast<unsigned>(tilebank_array_x * tilebank_array_y));
-
-    const float offset_x = position_x * GetScreenWidth();
-    const float offset_y = position_y * GetScreenHeight();
-
-    for (int i = 0; i < (tilebank_array_x * tilebank_array_y); i++)
-    {
-
-        tilebank_array.push_back({.x = offset_x + i % tilebank_array_x * ((scale * tile_size) + gap),
-                                  .y = offset_y + i / tilebank_array_x * ((scale * tile_size) + gap),
-                                  .width = scale * tile_size,
-                                  .height = scale * tile_size});
-    }
-    return tilebank_array;
-}
-*/
-
 std::optional<Rectangle> get_highlighted_tile(const Vector2 &mouse_point, const Grid &grid)
 {
     // TODO: add grids starting drawing (left top) point maybe?
