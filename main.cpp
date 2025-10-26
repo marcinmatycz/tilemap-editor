@@ -12,7 +12,6 @@
 #include "callbacks.hpp"
 #include "drawing.hpp"
 
-
 /*
 struct Tilemap
 {
@@ -22,25 +21,25 @@ struct Tilemap
 };
 */
 
-using Callback = void(*)(const Inputs& inputs, std::map<std::string, UI::Item> &ui, AppState &app_state, bool is_hovered);
+using Callback = void (*)(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &app_state,
+                          bool is_hovered);
 
-std::optional<std::string> get_ui_interaction(const Inputs &inputs, const std::vector<std::vector<std::string>> &layers, std::map<std::string, UI::Item> &ui)
+std::optional<std::string> get_ui_interaction(const Inputs &inputs, const std::vector<std::vector<std::string>> &layers,
+                                              std::map<std::string, UI::Item> &ui)
 {
-    for(const std::vector<std::string> &layer: layers)
+    for (const std::vector<std::string> &layer : layers)
     {
-	for(const std::string &item: layer)
-	{
-	    if(UI::is_hovered(ui[item], inputs))
-	    {
-		return item;
-	    }
-
-	}
+        for (const std::string &item : layer)
+        {
+            if (UI::is_hovered(ui[item], inputs))
+            {
+                return item;
+            }
+        }
     }
 
     return std::nullopt;
 };
-
 
 /*
 std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
@@ -73,11 +72,14 @@ std::vector<Rectangle> load_tilebank_array(const YAML::Node &config)
 
 std::optional<Rectangle> get_highlighted_tile(const Vector2 &mouse_point, const Grid &grid)
 {
-    //TODO: add grids starting drawing (left top) point maybe?
-    const Rectangle grid_boundaries{.x = 0.f, .y = 0.f, .width = grid.square_size_px * grid.x_square_count, .height = grid.square_size_px * grid.y_square_count};
-    if(not CheckCollisionPointRec(mouse_point, grid_boundaries))
+    // TODO: add grids starting drawing (left top) point maybe?
+    const Rectangle grid_boundaries{.x = 0.f,
+                                    .y = 0.f,
+                                    .width = grid.square_size_px * grid.x_square_count,
+                                    .height = grid.square_size_px * grid.y_square_count};
+    if (not CheckCollisionPointRec(mouse_point, grid_boundaries))
     {
-	return std::nullopt;
+        return std::nullopt;
     }
     const auto &size = grid.square_size_px;
     const int x = mouse_point.x / size;
@@ -97,7 +99,7 @@ int main(void)
     };
     if (config["screen"]["fullscreen"].as<bool>())
     {
-	ToggleBorderlessWindowed();
+        ToggleBorderlessWindowed();
     }
     const auto [screen_width, screen_height] = config::get_screen_size(config);
     SetWindowSize(screen_width, screen_height);
@@ -113,7 +115,6 @@ int main(void)
 
     SetTargetFPS(60);
 
-
     Camera2D main_camera = {};
     main_camera.zoom = 1.0f;
     Camera2D texture_camera = {};
@@ -128,56 +129,60 @@ int main(void)
     const int margin = config["texture_grid"]["margin"].as<int>();
 
     Grid texture_grid{};
-    if(tilemaps.size() > 0)
+    if (tilemaps.size() > 0)
     {
-	texture_grid = {.x_square_count = tilemaps[0].texture.width / tile_size + 2*margin,
-	    .y_square_count = tilemaps[0].texture.height / tile_size + 2*margin,
-	    .square_size_px = tile_size * initial_scale};
+        texture_grid = {.x_square_count = tilemaps[0].texture.width / tile_size + 2 * margin,
+                        .y_square_count = tilemaps[0].texture.height / tile_size + 2 * margin,
+                        .square_size_px = tile_size * initial_scale};
     }
 
-    AppState app_state{.main_grid = main_grid, .texture_grid = texture_grid, .main_camera = main_camera, .texture_camera = texture_camera, .tilemap_index = {}};
+    AppState app_state{.main_grid = main_grid,
+                       .texture_grid = texture_grid,
+                       .main_camera = main_camera,
+                       .texture_camera = texture_camera,
+                       .tilemap_index = {}};
     std::optional<std::string> previously_hovered_item{std::nullopt};
-
 
     while (!WindowShouldClose())
     {
         const Inputs inputs = get_inputs();
-	const std::optional<std::string> hovered_item = get_ui_interaction(inputs, layers, ui);
-	if(hovered_item.has_value())
-	{
-	    if(ui_callbacks.contains(hovered_item.value()))
-	    {
-		ui_callbacks[hovered_item.value()](inputs, ui, app_state, true);
-	    }
-	}
-	else if(previously_hovered_item.has_value())
-	{
-	    if(ui_callbacks.contains(previously_hovered_item.value()))
-	    {
-		ui_callbacks[previously_hovered_item.value()](inputs, ui, app_state, false);
-	    }
-	}
-	previously_hovered_item = hovered_item;
+        const std::optional<std::string> hovered_item = get_ui_interaction(inputs, layers, ui);
+        if (hovered_item.has_value())
+        {
+            if (ui_callbacks.contains(hovered_item.value()))
+            {
+                ui_callbacks[hovered_item.value()](inputs, ui, app_state, true);
+            }
+        }
+        else if (previously_hovered_item.has_value())
+        {
+            if (ui_callbacks.contains(previously_hovered_item.value()))
+            {
+                ui_callbacks[previously_hovered_item.value()](inputs, ui, app_state, false);
+            }
+        }
+        previously_hovered_item = hovered_item;
 
-
-	const Vector2 mouse_point_texture = GetScreenToWorld2D(inputs.mouse_point, app_state.texture_camera);
-	const Vector2 mouse_point_map = GetScreenToWorld2D(inputs.mouse_point, app_state.main_camera);
-	const std::optional<Rectangle> highlighted_texture_tile = get_highlighted_tile(mouse_point_texture, app_state.texture_grid);
-	const std::optional<Rectangle> highlighted_map_tile = get_highlighted_tile(mouse_point_map, app_state.main_grid);
+        const Vector2 mouse_point_texture = GetScreenToWorld2D(inputs.mouse_point, app_state.texture_camera);
+        const Vector2 mouse_point_map = GetScreenToWorld2D(inputs.mouse_point, app_state.main_camera);
+        const std::optional<Rectangle> highlighted_texture_tile =
+            get_highlighted_tile(mouse_point_texture, app_state.texture_grid);
+        const std::optional<Rectangle> highlighted_map_tile =
+            get_highlighted_tile(mouse_point_map, app_state.main_grid);
 
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
 
         BeginMode2D(app_state.main_camera);
-	drawing::draw_main_area(app_state);
-	if(highlighted_map_tile)
-	{
-	    drawing::draw_highlighted_tile(highlighted_map_tile.value());
-	}
+        drawing::draw_main_area(app_state);
+        if (highlighted_map_tile)
+        {
+            drawing::draw_highlighted_tile(highlighted_map_tile.value());
+        }
         EndMode2D();
 
-	drawing::draw_ui(layers, ui);
+        drawing::draw_ui(layers, ui);
 
         const int sc_x = screen_width * 0.025f;
         const int sc_y = screen_height * 0.125f;
@@ -186,12 +191,12 @@ int main(void)
 
         BeginScissorMode(sc_x, sc_y, sc_w, sc_h);
         BeginMode2D(app_state.texture_camera);
-	drawing::draw_texture_area(app_state, tilemaps[app_state.tilemap_index].texture, config);
-	if(highlighted_texture_tile)
-	{
-	    drawing::draw_highlighted_tile(highlighted_texture_tile.value());
-	}
-	EndMode2D();
+        drawing::draw_texture_area(app_state, tilemaps[app_state.tilemap_index].texture, config);
+        if (highlighted_texture_tile)
+        {
+            drawing::draw_highlighted_tile(highlighted_texture_tile.value());
+        }
+        EndMode2D();
         EndScissorMode();
 
         EndDrawing();

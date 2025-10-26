@@ -48,10 +48,7 @@ inline bool is_hovered(const Triangle &triangle, const Inputs &inputs)
     return CheckCollisionPointTriangle(inputs.mouse_point, triangle.p1, triangle.p2, triangle.p3);
 }
 
-inline bool is_hovered(const Text &, const Inputs &)
-{
-    return false;
-}
+inline bool is_hovered(const Text &, const Inputs &) { return false; }
 
 inline bool is_hovered(const Textbox &textbox, const Inputs &inputs)
 {
@@ -60,17 +57,9 @@ inline bool is_hovered(const Textbox &textbox, const Inputs &inputs)
 
 inline bool is_hovered(const Item &item, const Inputs &inputs)
 {
-    const auto visitor = [&inputs] (const auto &i)
-    {
-	return is_hovered(i, inputs);
-    };
+    const auto visitor = [&inputs](const auto &i) { return is_hovered(i, inputs); };
 
     return item.visit(visitor);
 }
 
-
-
-
 } // namespace UI
-
-

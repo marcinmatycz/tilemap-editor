@@ -4,7 +4,6 @@
 #include "yaml-cpp/yaml.h"
 #include "ui.hpp"
 
-
 namespace config
 {
 
@@ -19,7 +18,8 @@ inline std::array<int, 2> get_screen_size(const YAML::Node &config)
     return {config["screen"]["width"].as<int>(), config["screen"]["height"].as<int>()};
 }
 
-std::pair<std::vector<std::vector<std::string>>, std::map<std::string, UI::Item>> load_interface(const YAML::Node &config, const float screen_width, const float screen_height)
+std::pair<std::vector<std::vector<std::string>>, std::map<std::string, UI::Item>>
+load_interface(const YAML::Node &config, const float screen_width, const float screen_height)
 {
     std::map<std::string, UI::Item> map{};
     std::vector<std::vector<std::string>> layers{};
@@ -36,9 +36,9 @@ std::pair<std::vector<std::vector<std::string>>, std::map<std::string, UI::Item>
             map[item_key] = UI::Box{Rectangle{.x = screen_width * item["position_x"].as<float>(),
                                               .y = screen_height * item["position_y"].as<float>(),
                                               .width = screen_width * item["width"].as<float>(),
-                                              .height = screen_height *item["height"].as<float>()},
+                                              .height = screen_height * item["height"].as<float>()},
                                     color};
-	}
+        }
         else if (item_type == "textbox")
         {
             const float box_width = screen_width * item["width"].as<float>();
@@ -46,7 +46,7 @@ std::pair<std::vector<std::vector<std::string>>, std::map<std::string, UI::Item>
             const std::string text = item["text"].as<std::string>();
             const float text_margin = item["text_margin"].as<float>();
 
-	    // find font size which will fill the whole box
+            // find font size which will fill the whole box
             int font_size = 1;
             bool font_size_found = false;
 
@@ -72,7 +72,7 @@ std::pair<std::vector<std::vector<std::string>>, std::map<std::string, UI::Item>
             const int text_y = (box_height - font_size) / 2.f + box_y;
 
             map[item_key] =
-	    UI::Textbox{UI::Box{Rectangle{.x = box_x, .y = box_y, .width = box_width, .height = box_height}, color},
+                UI::Textbox{UI::Box{Rectangle{.x = box_x, .y = box_y, .width = box_width, .height = box_height}, color},
                             UI::Text{.x = text_x, .y = text_y, .size = font_size, .text = text, .color = WHITE}};
         }
         else if (item_type == "triangle")
@@ -91,21 +91,21 @@ std::pair<std::vector<std::vector<std::string>>, std::map<std::string, UI::Item>
                                      .text = item["text"].as<std::string>(),
                                      .color = color};
         }
-	else
-	{
-	    printf("Type: %s not supported", item_type.c_str());
-	}
+        else
+        {
+            printf("Type: %s not supported", item_type.c_str());
+        }
 
-	if(map.contains(item_key))
-	{
-	    const unsigned layer = item["layer"].as<unsigned>();
-	    if(layers.size() < layer)
-	    {
-		layers.resize(layer + 1);
-	    }
+        if (map.contains(item_key))
+        {
+            const unsigned layer = item["layer"].as<unsigned>();
+            if (layers.size() < layer)
+            {
+                layers.resize(layer + 1);
+            }
 
-	    layers[layer].push_back(item_key);
-	}
+            layers[layer].push_back(item_key);
+        }
     }
     return {layers, map};
 }
@@ -128,4 +128,4 @@ inline std::vector<Tilemap> load_textures(const YAML::Node &config)
     return tilemaps;
 }
 
-}
+} // namespace config

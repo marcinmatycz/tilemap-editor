@@ -68,4 +68,3 @@ inline Inputs get_inputs()
     return {GetMousePosition(), get_mouse_button_state(MOUSE_BUTTON_LEFT), get_mouse_button_state(MOUSE_BUTTON_RIGHT),
             GetMouseWheelMove()};
 }
-

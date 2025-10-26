@@ -8,7 +8,6 @@
 #include "ui.hpp"
 #include "yaml-cpp/yaml.h"
 
-
 namespace drawing
 {
 
@@ -16,13 +15,13 @@ inline void draw_main_area(const AppState &app_state)
 {
     for (int i = 0; i < app_state.main_grid.x_square_count; i++)
     {
-	for (int j = 0; j < app_state.main_grid.y_square_count; j++)
-	{
-	    const int square_size = app_state.main_grid.square_size_px;
-	    DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
-	}
+        for (int j = 0; j < app_state.main_grid.y_square_count; j++)
+        {
+            const int square_size = app_state.main_grid.square_size_px;
+            DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
+        }
     }
-    //TODO: remove
+    // TODO: remove
     DrawCircle(GetScreenWidth() / 2, GetScreenHeight() / 2, 50, MAROON);
 }
 
@@ -30,11 +29,11 @@ inline void draw_texture_area(const AppState &app_state, const Texture2D &textur
 {
     for (int i = 0; i < app_state.texture_grid.x_square_count; i++)
     {
-	for (int j = 0; j < app_state.texture_grid.y_square_count; j++)
-	{
-	    const int square_size = app_state.texture_grid.square_size_px;
-	    DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
-	}
+        for (int j = 0; j < app_state.texture_grid.y_square_count; j++)
+        {
+            const int square_size = app_state.texture_grid.square_size_px;
+            DrawRectangleLines(i * square_size, j * square_size, square_size, square_size, BLACK);
+        }
     }
 
     const int tile_size = config["tile_size_px"].as<int>();
@@ -52,40 +51,39 @@ inline void draw_highlighted_tile(const Rectangle &tile)
     DrawRectangleRec(tile, highlight);
 }
 
-inline void draw_ui( const std::vector<std::vector<std::string>> &layers, std::map<std::string, UI::Item> &ui) 
+inline void draw_ui(const std::vector<std::vector<std::string>> &layers, std::map<std::string, UI::Item> &ui)
 {
-    for(auto layer = layers.rbegin(); layer != layers.rend(); layer++)
+    for (auto layer = layers.rbegin(); layer != layers.rend(); layer++)
     {
-	for(const std::string &key: *layer)
-	{
-	    const auto &item = ui[key];
-	    //TODO: add visitors with drawing to ui.hpp
-	    if (std::holds_alternative<UI::Box>(item))
-	    {
-		const auto &box = std::get<UI::Box>(item);
-		DrawRectangleRec(box.rectangle, box.color);
-	    }
-	    else if (std::holds_alternative<UI::Textbox>(item))
-	    {
-		const auto &box = std::get<UI::Textbox>(item).box;
-		DrawRectangleRec(box.rectangle, box.color);
+        for (const std::string &key : *layer)
+        {
+            const auto &item = ui[key];
+            // TODO: add visitors with drawing to ui.hpp
+            if (std::holds_alternative<UI::Box>(item))
+            {
+                const auto &box = std::get<UI::Box>(item);
+                DrawRectangleRec(box.rectangle, box.color);
+            }
+            else if (std::holds_alternative<UI::Textbox>(item))
+            {
+                const auto &box = std::get<UI::Textbox>(item).box;
+                DrawRectangleRec(box.rectangle, box.color);
 
-		const auto &text = std::get<UI::Textbox>(item).text;
-		DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
-	    }
-	    else if (std::holds_alternative<UI::Triangle>(item))
-	    {
-		const auto &triangle = std::get<UI::Triangle>(item);
-		DrawTriangle(triangle.p1, triangle.p2, triangle.p3, triangle.color);
-	    }
-	    else if (std::holds_alternative<UI::Text>(item))
-	    {
-		const auto &text = std::get<UI::Text>(item);
-		DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
-	    }
-
-	}
+                const auto &text = std::get<UI::Textbox>(item).text;
+                DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
+            }
+            else if (std::holds_alternative<UI::Triangle>(item))
+            {
+                const auto &triangle = std::get<UI::Triangle>(item);
+                DrawTriangle(triangle.p1, triangle.p2, triangle.p3, triangle.color);
+            }
+            else if (std::holds_alternative<UI::Text>(item))
+            {
+                const auto &text = std::get<UI::Text>(item);
+                DrawText(text.text.c_str(), text.x, text.y, text.size, text.color);
+            }
+        }
     }
 }
 
-}
+} // namespace drawing
