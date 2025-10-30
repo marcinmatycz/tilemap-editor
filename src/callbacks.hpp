@@ -171,38 +171,6 @@ if (CheckCollisionPointRec(inputs.mouse_point, reload_button.rectangle))
         tilebank_array = load_tilebank_array(config);
     }
 }
-else if (CheckCollisionPointTriangle(inputs.mouse_point, left_arrow.p1, left_arrow.p2, left_arrow.p3))
-{
-    left_arrow.color.a += 40;
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
-        if (tilemap_index == 0)
-        {
-            tilemap_index = tilemaps.size() - 1;
-        }
-        else
-        {
-            tilemap_index--;
-        }
-
-        UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
-        text.text = tilemaps[tilemap_index].texture_filename;
-    }
-}
-else if (CheckCollisionPointTriangle(inputs.mouse_point, right_arrow.p1, right_arrow.p2, right_arrow.p3))
-{
-    right_arrow.color.a += 40;
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
-        tilemap_index++;
-        if (tilemap_index == tilemaps.size())
-        {
-            tilemap_index = 0;
-        }
-        UI::Text &text = std::get<UI::Text>(interface["tilemap_filename"]);
-        text.text = tilemaps[tilemap_index].texture_filename;
-    }
-}
 */
 
 } // namespace callbacks

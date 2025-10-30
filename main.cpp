@@ -141,6 +141,21 @@ int main(void)
         const std::optional<Rectangle> highlighted_map_tile =
             get_highlighted_tile(mouse_point_map, app_state.main_grid);
 
+	if((hovered_item == "texture_area") and (inputs.left_mouse_button == MouseButtonState::PRESSED) and (highlighted_texture_tile.has_value()))
+	{
+	    app_state.selected_tile = highlighted_texture_tile.value();
+	    Rectangle &tile = app_state.selected_tile.value();
+	    tile.x = tile.x/initial_scale - (margin*tile_size);
+	    tile.y = tile.y/initial_scale - (margin*tile_size);
+	    tile.width = tile.width/initial_scale;
+	    tile.height = tile.height/initial_scale;
+	    const Texture2D &tex = app_state.tilemaps[app_state.tilemap_index].texture;
+	    if((tile.x < 0.0f) or (tile.y < 0.0f) or ((tile.x + tile.width/2) > tex.width) or ((tile.y + tile.height/2) > tex.height))
+	    {
+		app_state.selected_tile = std::nullopt;
+	    }
+	}
+
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
@@ -169,6 +184,14 @@ int main(void)
         }
         EndMode2D();
         EndScissorMode();
+
+	if(app_state.selected_tile.has_value())
+	{
+	    //TODO: maybe fixed size? check how other editors work
+	    const Rectangle tile_following_mouse{.x = inputs.mouse_point.x, .y = inputs.mouse_point.y, .width = app_state.main_grid.square_size_px, .height = app_state.main_grid.square_size_px};
+	    DrawTexturePro(app_state.tilemaps[app_state.tilemap_index].texture, app_state.selected_tile.value(), tile_following_mouse, {}, 0.f, WHITE);
+	}
+
 
         EndDrawing();
     }

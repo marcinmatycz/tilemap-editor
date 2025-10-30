@@ -2,6 +2,7 @@
 #include <cassert>
 #include <string>
 #include <vector>
+#include <optional>
 #include "raylib.h"
 
 struct Tilemap
@@ -43,6 +44,7 @@ struct AppState
     unsigned tilemap_index{0};
     int tile_size{};
     int texture_grid_margin{};
+    std::optional<Rectangle> selected_tile{};
 };
 
 inline MouseButtonState get_mouse_button_state(const MouseButton button)
