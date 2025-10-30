@@ -165,7 +165,6 @@ int main(void)
         {
             app_state.active_tiles.push_back({app_state.tilemaps[app_state.tilemap_index].texture,
                                               app_state.selected_tile.value(), highlighted_map_tile.value()});
-            app_state.selected_tile = std::nullopt;
         }
 
         if (app_state.selected_tile.has_value() and (inputs.right_mouse_button == MouseButtonState::PRESSED))
