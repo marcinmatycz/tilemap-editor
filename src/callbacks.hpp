@@ -53,9 +53,8 @@ inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &u
 
             UI::Text &text = std::get<UI::Text>(ui["tilemap_filename"]);
             text.text = app_state.tilemaps[app_state.tilemap_index].texture_filename;
-	    
 
-	    app_state.selected_tile = std::nullopt;
+            app_state.selected_tile = std::nullopt;
         }
     }
     else
@@ -96,7 +95,7 @@ inline void arrow_left(const Inputs &inputs, std::map<std::string, UI::Item> &ui
             UI::Text &text = std::get<UI::Text>(ui["tilemap_filename"]);
             text.text = app_state.tilemaps[app_state.tilemap_index].texture_filename;
 
-	    app_state.selected_tile = std::nullopt;
+            app_state.selected_tile = std::nullopt;
         }
     }
     else
