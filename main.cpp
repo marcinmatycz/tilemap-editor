@@ -141,6 +141,7 @@ int main(void)
         const std::optional<Rectangle> highlighted_map_tile =
             get_highlighted_tile(mouse_point_map, app_state.main_grid);
 
+        // TODO: move to "texture_area" callbacks probably
         if ((hovered_item == "texture_area") and (inputs.left_mouse_button == MouseButtonState::PRESSED) and
             (highlighted_texture_tile.has_value()))
         {
@@ -158,6 +159,15 @@ int main(void)
             }
         }
 
+        // TODO: move to "main_area" callbacks probably
+        if ((hovered_item == "main_area") and app_state.selected_tile.has_value() and
+            (inputs.left_mouse_button == MouseButtonState::PRESSED) and highlighted_map_tile.has_value())
+        {
+            app_state.active_tiles.push_back({app_state.tilemaps[app_state.tilemap_index].texture,
+                                              app_state.selected_tile.value(), highlighted_map_tile.value()});
+            app_state.selected_tile = std::nullopt;
+        }
+
         if (app_state.selected_tile.has_value() and (inputs.right_mouse_button == MouseButtonState::PRESSED))
         {
             app_state.selected_tile = std::nullopt;
@@ -169,6 +179,11 @@ int main(void)
 
         BeginMode2D(app_state.main_camera);
         drawing::draw_main_area(app_state);
+        for (const auto &tile : app_state.active_tiles)
+        {
+            const auto &[source_texture, source_tile, destination_tile] = tile;
+            DrawTexturePro(source_texture, source_tile, destination_tile, {}, 0.f, WHITE);
+        }
         if (highlighted_map_tile)
         {
             drawing::draw_highlighted_tile(highlighted_map_tile.value());

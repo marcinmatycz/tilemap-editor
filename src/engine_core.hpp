@@ -34,6 +34,13 @@ struct Grid
     int square_size_px{};
 };
 
+struct Tile
+{
+    Texture2D &source;
+    Rectangle source_tile;
+    Rectangle destination_tile;
+};
+
 struct AppState
 {
     Grid main_grid{};
@@ -45,6 +52,7 @@ struct AppState
     int tile_size{};
     int texture_grid_margin{};
     std::optional<Rectangle> selected_tile{};
+    std::vector<Tile> active_tiles{};
 };
 
 inline MouseButtonState get_mouse_button_state(const MouseButton button)
