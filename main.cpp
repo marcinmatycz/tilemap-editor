@@ -195,6 +195,7 @@ int main(void)
 	    //TODO: maybe fixed size? check how other editors work
 	    const Rectangle tile_following_mouse{.x = inputs.mouse_point.x, .y = inputs.mouse_point.y, .width = app_state.main_grid.square_size_px, .height = app_state.main_grid.square_size_px};
 	    DrawTexturePro(app_state.tilemaps[app_state.tilemap_index].texture, app_state.selected_tile.value(), tile_following_mouse, {}, 0.f, WHITE);
+            DrawRectangleLines(tile_following_mouse.x, tile_following_mouse.y, tile_following_mouse.width, tile_following_mouse.height, BLACK);
 	}
 
 
