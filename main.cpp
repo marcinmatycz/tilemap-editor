@@ -156,6 +156,11 @@ int main(void)
 	    }
 	}
 
+	if(app_state.selected_tile.has_value() and (inputs.right_mouse_button == MouseButtonState::PRESSED))
+	{
+	    app_state.selected_tile = std::nullopt;
+	}
+
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
