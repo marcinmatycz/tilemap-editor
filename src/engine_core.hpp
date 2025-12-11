@@ -53,6 +53,7 @@ struct AppState
     int texture_grid_margin{};
     std::optional<Rectangle> selected_tile{};
     std::vector<Tile> active_tiles{};
+    RenderTexture2D output{};
 };
 
 inline MouseButtonState get_mouse_button_state(const MouseButton button)

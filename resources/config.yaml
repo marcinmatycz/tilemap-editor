@@ -117,5 +117,18 @@ interface:
       g: 0
       b: 0
       a: 255
-
+  save_output_button:
+    layer: 1
+    type: textbox
+    position_x: 0.45
+    position_y: 0.90
+    width: 0.1
+    height: 0.05
+    text: "SAVE OUTPUT"
+    text_margin: 0.2
+    color:
+      r: 0
+      g: 121
+      b: 241
+      a: 150
 

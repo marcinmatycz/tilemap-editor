@@ -24,6 +24,29 @@ inline void reload_button(const Inputs &, std::map<std::string, UI::Item> &ui, A
     }
 }
 
+inline void save_output_button(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &app_state,
+                               const bool is_hovered)
+{
+    UI::Item &button = ui["save_output_button"];
+    if (is_hovered)
+    {
+        // TODO: better colors in yaml, add predefined which map to raylib or something
+        std::get<UI::Textbox>(button).box.color = RED;
+        if (inputs.left_mouse_button == MouseButtonState::PRESSED)
+        {
+            Image output = LoadImageFromTexture(app_state.output.texture);
+            ImageFlipVertical(&output);
+            assert(ExportImage(output, "output.png"));
+            UnloadImage(output);
+        }
+    }
+    else
+    {
+        // TODO: add hovered color and not hovered color
+        std::get<UI::Textbox>(button).box.color = BLUE;
+    }
+}
+
 inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &ui, AppState &app_state,
                         const bool is_hovered)
 {

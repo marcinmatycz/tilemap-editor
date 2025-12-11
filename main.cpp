@@ -78,6 +78,7 @@ int main(void)
     auto [layers, ui] = config::load_interface(config, screen_width, screen_height);
     std::map<std::string, Callback> ui_callbacks;
     ui_callbacks["reload_button"] = callbacks::reload_button;
+    ui_callbacks["save_output_button"] = callbacks::save_output_button;
     ui_callbacks["tile_bank_arrow_right"] = callbacks::arrow_right;
     ui_callbacks["tile_bank_arrow_left"] = callbacks::arrow_left;
     ui_callbacks["main_area"] = callbacks::main_area;
@@ -103,7 +104,12 @@ int main(void)
                        .tilemaps = config::load_textures(config),
                        .tilemap_index = {},
                        .tile_size = tile_size,
-                       .texture_grid_margin = margin};
+                       .texture_grid_margin = margin,
+                       .output = LoadRenderTexture(screen_width, screen_height)};
+
+    BeginTextureMode(app_state.output);
+    ClearBackground(RAYWHITE);
+    EndTextureMode();
 
     if (app_state.tilemaps.size() > 0)
     {
@@ -173,6 +179,10 @@ int main(void)
         {
             app_state.active_tiles.push_back({app_state.tilemaps[app_state.tilemap_index].texture,
                                               app_state.selected_tile.value(), highlighted_map_tile.value()});
+            BeginTextureMode(app_state.output);
+            DrawTexturePro(app_state.tilemaps[app_state.tilemap_index].texture, app_state.selected_tile.value(),
+                           highlighted_map_tile.value(), {}, 0.f, WHITE);
+            EndTextureMode();
         }
 
         if (app_state.selected_tile.has_value() and (inputs.right_mouse_button == MouseButtonState::PRESSED))
@@ -234,6 +244,7 @@ int main(void)
     {
         UnloadTexture(tilemap.texture);
     }
+    UnloadRenderTexture(app_state.output);
     CloseWindow();
     return 0;
 }
