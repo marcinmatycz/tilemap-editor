@@ -120,18 +120,26 @@ int main(void)
         const std::optional<std::string> hovered_item = get_ui_interaction(inputs, layers, ui);
         if (hovered_item.has_value())
         {
-            if (ui_callbacks.contains(hovered_item.value()))
+            const auto &hi = hovered_item.value();
+            if (ui_callbacks.contains(hi))
             {
-                ui_callbacks[hovered_item.value()](inputs, ui, app_state, true);
+                ui_callbacks[hi](inputs, ui, app_state, true);
             }
         }
-        else if (previously_hovered_item.has_value())
+
+        if (previously_hovered_item.has_value())
         {
-            if (ui_callbacks.contains(previously_hovered_item.value()))
+            const auto &phi = previously_hovered_item.value();
+
+            if ((not hovered_item.has_value()) or (phi != hovered_item.value()))
             {
-                ui_callbacks[previously_hovered_item.value()](inputs, ui, app_state, false);
+                if (ui_callbacks.contains(phi))
+                {
+                    ui_callbacks[phi](inputs, ui, app_state, false);
+                }
             }
         }
+
         previously_hovered_item = hovered_item;
 
         const Vector2 mouse_point_texture = GetScreenToWorld2D(inputs.mouse_point, app_state.texture_camera);

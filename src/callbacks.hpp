@@ -31,7 +31,7 @@ inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &u
     if (is_hovered)
     {
         // TODO: better colors in yaml, add predefined which map to raylib or something
-        std::get<UI::Triangle>(arrow).color.a += 40;
+        std::get<UI::Triangle>(arrow).color = SKYBLUE;
 
         unsigned &index = app_state.tilemap_index;
         if (inputs.left_mouse_button == MouseButtonState::PRESSED)
@@ -60,7 +60,7 @@ inline void arrow_right(const Inputs &inputs, std::map<std::string, UI::Item> &u
     else
     {
         // TODO: add hovered color and not hovered color
-        std::get<UI::Triangle>(arrow).color.a -= 40;
+        std::get<UI::Triangle>(arrow).color = BLUE;
     }
 }
 
@@ -71,7 +71,7 @@ inline void arrow_left(const Inputs &inputs, std::map<std::string, UI::Item> &ui
     if (is_hovered)
     {
         // TODO: better colors in yaml, add predefined which map to raylib or something
-        std::get<UI::Triangle>(arrow).color.a += 40;
+        std::get<UI::Triangle>(arrow).color = SKYBLUE;
         if (inputs.left_mouse_button == MouseButtonState::PRESSED)
         {
             unsigned &index = app_state.tilemap_index;
@@ -101,7 +101,7 @@ inline void arrow_left(const Inputs &inputs, std::map<std::string, UI::Item> &ui
     else
     {
         // TODO: add hovered color and not hovered color
-        std::get<UI::Triangle>(arrow).color.a -= 40;
+        std::get<UI::Triangle>(arrow).color = BLUE;
     }
 }
 
